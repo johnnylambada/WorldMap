@@ -1,0 +1,29 @@
+WorldMap is a simple Android app that displays a map of the world taken from Wikimedia (http://upload.wikimedia.org/wikipedia/commons/3/33/Physical_Political_World_Map.jpg), and allows the user to scroll around on it.
+
+The map itself is quite large (6480,3888), so it's way too big to fit in memory all at once (6480 x 3888 x 16 / 8) = 50,388,480 -- over 48 megs. The VM heap size Android supports is eith 16 or 24 megs, so we can't fit the whole thing in memory at once.
+
+So WorldMap uses the BitmapRegionDecoder API (available as of API 10) to decode just what it needs to display.
+
+Tag            description
+-------------- ------------------------------------------------------
+120410-initial The initial version is quite dumb. It's able to track
+               the user, but it decodes the entire bitmap each time,
+               making the user experience quite choppy.
+
+
+
+Road Map
+--------
+* Refactor the code.
+* Work on getting the frame rate up
+  * Instead of decoding the entire bitmap each time, decode just what's necesary to fill in the offset.
+  * Investigate the use of animation between cycles
+  * Perhaps use surfaceview
+
+* backport BitmapRegionDecoder to 2.2 or use a different library with JNI.
+
+* Add flinging to move quickly across the map
+
+* Add zooming to infinite levels
+  * start with the map fully unzoomed
+  * Calculate where in the world we are once we get to a certain level, then create an intent to start Google Maps.
