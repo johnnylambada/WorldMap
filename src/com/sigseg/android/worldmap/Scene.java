@@ -21,12 +21,12 @@ import android.util.Log;
  * |  |                        |            |                          |<br>
  * |  |                        |            |                          |<br>
  * |  |                        |            |                          |<br>
- * |  |        displayBitmap   |            |                          |<br>
+ * |  |           Viewport     |            |                          |<br>
  * |  +------------------------+            |                          |<br>
  * |                                        |                          |<br>
  * |                                        |                          |<br>
  * |                                        |                          |<br>
- * |                          cacheBitmap   |                          |<br>
+ * |                          Cache         |                          |<br>
  * |----------------------------------------+                          |<br>
  * |                                                                   |<br>
  * |                                                                   |<br>
@@ -99,19 +99,77 @@ class Scene {
 	}
 	
 	class Cache {
-		/** The coordinates of the left,top of the Cache within the entire bitmap */
-		private final Point origin = new Point(0,0);
+		/** A Rect that defines where the Cache is within the scene */
+		final Rect originRect = new Rect(0,0,0,0);
+		/** Used to calculate the Rect within the cache to copy from for the Viewport */
+		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
-		Bitmap bitmap;
+		Bitmap bitmap = null;
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
-			bitmap = decoder.decodeRegion( viewport.originRect, options );
+			
+			if (bitmap==null){
+				// Start the cache off right
+				if (DEBUG) Log.d(TAG,"decode first bitmap");
+				setOriginRect(viewport.originRect);
+				bitmap = decoder.decodeRegion( originRect, options );
+			} else if (!originRect.contains(viewport.originRect)){
+				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
+				if (DEBUG) Log.d(TAG,"viewport not in cache");
+				setOriginRect(viewport.originRect);
+				bitmap = decoder.decodeRegion( originRect, options );
+			} else {
+				// Happy case -- the cache already contains the Viewport
+			}
+			int left   = viewport.originRect.left - originRect.left;
+			int top    = viewport.originRect.top  - originRect.top;
+			int right  = left + viewport.originRect.width();
+			int bottom = top  + viewport.originRect.height();
+			srcRect.set( left, top, right, bottom );
 			Canvas c = new Canvas(viewport.bitmap);
 			c.drawBitmap(bitmap,
-					null,
+					srcRect,
 					viewport.bitmapRect,
 					null);
+		}
+		
+		/** Figure out the originRect based on the viewportRect */
+		private void setOriginRect(Rect viewportRect ){
+			int vw = viewportRect.width();
+			int vh = viewportRect.height();
+			int mw = vw; // marginWidth
+			int mh = vh; // marginHeight 
+			
+			if (vw+mw > sceneWidth)
+				mw = Math.max(0, sceneWidth-vw);
+			if (vh+mh > sceneHeight)
+				mh = Math.max(0, sceneHeight-vh);
+			
+			int left = viewportRect.left - (mw>>1);
+			int right = viewportRect.right + (mw>>1);
+			if (left<0){
+				right = right - left; // Add's the overage on the left side back to the right
+				left = 0;
+			}
+			if (right>sceneWidth){
+				left = left - (right-sceneWidth); // Adds overage on right side back to left
+				right = sceneWidth;
+			}
+
+		
+			int top = viewportRect.top - (mh>>1); 
+			int bottom = viewportRect.bottom + (mh>>1);
+			if (top<0){
+				bottom = bottom - top; // Add's the overage on the top back to the bottom
+				top = 0;
+			}
+			if (bottom>sceneHeight){
+				top = top - (bottom-sceneHeight); // Adds overage on bottom back to top
+				bottom = sceneHeight;
+			}
+			originRect.set(left, top, right, bottom);
+			if (DEBUG) Log.d(TAG,"new cache.originRect = "+originRect.toShortString()); 
 		}
 	}
 
@@ -153,36 +211,4 @@ class Scene {
 	public void update(){
 		viewport.update();
 	}
-
-//
-//	/**
-//	 * Fill the displayBitmap with the cacheBitmap starting at x,y
-//	 * @param x
-//	 * @param y
-//	 * @param displayBitmap
-//	 */
-//	public void getBitmap(Point point, Bitmap displayBitmap) {
-//		if (DEBUG)
-//			Log.d(TAG, "getBitmap() regionRect=" + cacheRect.toShortString());
-//		if (cacheBitmap == null) {
-//			Rect r = new Rect(cacheRect);
-//			r.right = Math.min(r.right + r.width(), sceneWidth);
-//			r.bottom = Math.min(r.bottom + r.height(), sceneHeight);
-//			cacheBitmap = decoder.decodeRegion(r, options);
-//		}
-//		// bitmap = Bitmap.createBitmap(
-//		// regionBitmap,
-//		// regionRect.left, regionRect.top, regionRect.width(),
-//		// regionRect.height());
-//		Canvas canvas = new Canvas(displayBitmap);
-//		int w = displayBitmap.getWidth();
-//		int h = displayBitmap.getHeight();
-//		Rect s = new Rect(point.x,point.y,point.x+w,point.y+h);
-//		Rect d = new Rect(0,0,w,h);
-//		canvas.drawBitmap(
-//				cacheBitmap,
-//				s, 
-//				d, 
-//				null);
-//	}
 }
