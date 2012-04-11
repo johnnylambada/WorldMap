@@ -5,12 +5,11 @@ import java.io.InputStream;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
-import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.Bitmap.Config;
 import android.util.Log;
 
 /**
@@ -43,8 +42,7 @@ class Scene {
 
 	private InputStream is;
 	private BitmapRegionDecoder decoder;
-	private final BitmapFactory.Options options = new BitmapFactory.Options();
-	private int sceneWidth, sceneHeight;
+	private int width, height;
 
 	public final Viewport viewport;
 	public final Cache cache;
@@ -70,11 +68,11 @@ class Scene {
 			if (y < 0)
 				y = 0;
 
-			if (x + w > sceneWidth)
-				x = sceneWidth - w;
+			if (x + w > width)
+				x = width - w;
 
-			if (y + h > sceneHeight)
-				y = sceneHeight - h;
+			if (y + h > height)
+				y = height - h;
 
 			originRect.set(x, y, x+w, y+h);
 		}
@@ -105,6 +103,11 @@ class Scene {
 		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
 		Bitmap bitmap = null;
+		private final BitmapFactory.Options options = new BitmapFactory.Options();
+		
+		public Cache(){
+			options.inPreferredConfig = Bitmap.Config.RGB_565;
+		}
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
@@ -141,10 +144,10 @@ class Scene {
 			int mw = vw; // marginWidth
 			int mh = vh; // marginHeight 
 			
-			if (vw+mw > sceneWidth)
-				mw = Math.max(0, sceneWidth-vw);
-			if (vh+mh > sceneHeight)
-				mh = Math.max(0, sceneHeight-vh);
+			if (vw+mw > width)
+				mw = Math.max(0, width-vw);
+			if (vh+mh > height)
+				mh = Math.max(0, height-vh);
 			
 			int left = viewportRect.left - (mw>>1);
 			int right = viewportRect.right + (mw>>1);
@@ -152,9 +155,9 @@ class Scene {
 				right = right - left; // Add's the overage on the left side back to the right
 				left = 0;
 			}
-			if (right>sceneWidth){
-				left = left - (right-sceneWidth); // Adds overage on right side back to left
-				right = sceneWidth;
+			if (right>width){
+				left = left - (right-width); // Adds overage on right side back to left
+				right = width;
 			}
 
 		
@@ -164,9 +167,9 @@ class Scene {
 				bottom = bottom - top; // Add's the overage on the top back to the bottom
 				top = 0;
 			}
-			if (bottom>sceneHeight){
-				top = top - (bottom-sceneHeight); // Adds overage on bottom back to top
-				bottom = sceneHeight;
+			if (bottom>height){
+				top = top - (bottom-height); // Adds overage on bottom back to top
+				bottom = height;
 			}
 			originRect.set(left, top, right, bottom);
 			if (DEBUG) Log.d(TAG,"new cache.originRect = "+originRect.toShortString()); 
@@ -179,17 +182,15 @@ class Scene {
 	public Scene() {
 		cache = new Cache();
 		viewport = new Viewport();
-		options.inPreferredConfig = Bitmap.Config.RGB_565;
 	}
 
 	/**
 	 * Set the Scene to the named asset
 	 * @param context
 	 * @param assetName
-	 * @return
 	 * @throws IOException
 	 */
-	public Scene setFile(Context context, String assetName) throws IOException {
+	public void setFile(Context context, String assetName) throws IOException {
 		is = context.getAssets().open(assetName);
 		decoder = BitmapRegionDecoder.newInstance(is, false);
 
@@ -197,12 +198,11 @@ class Scene {
 		tmpOptions.inJustDecodeBounds = true;
 		BitmapFactory.decodeStream(is, null, tmpOptions);
 
-		sceneWidth = tmpOptions.outWidth;
-		sceneHeight = tmpOptions.outHeight;
+		width = tmpOptions.outWidth;
+		height = tmpOptions.outHeight;
 		if (DEBUG)
 			Log.d(TAG, String.format("setFile() decoded width=%d height=%d",
-					sceneWidth, sceneHeight));
-		return this;
+					width, height));
 	}
 
 	/**

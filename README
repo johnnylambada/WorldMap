@@ -8,21 +8,28 @@ Tag            description
 -------------- ------------------------------------------------------
 120410-initial The initial version is quite dumb. It's able to track
                the user, but it decodes the entire bitmap each time,
-               making the user experience quite choppy.
+               making the user experience quite choppy. About 4fps.
 
-
+120411-cached  This is much faster, average case of about 20fps. With
+               this version I read in 50% more picture in each direction
+               whenever I need to read.  Played with this against the
+               "largest image in wikipedia"
+               http://boingboing.net/2010/11/09/biggest-image-on-wik.html
+               It's a 25mb jpg weighing in at 27184,16995 px! I was able
+               to scroll all the way across and down the image with no
+               problems. Uncompressed, this file would take up
+               27184*16995*16/8 bytes (881 megs) of memory.
 
 Road Map
 --------
-* Refactor the code.
+* Add flinging to move quickly across the map
+
 * Work on getting the frame rate up
-  * Instead of decoding the entire bitmap each time, decode just what's necesary to fill in the offset.
-  * Investigate the use of animation between cycles
-  * Perhaps use surfaceview
+  * Perhaps use SurfaceView
+  * Or glSurfaceView
 
 * backport BitmapRegionDecoder to 2.2 or use a different library with JNI.
-
-* Add flinging to move quickly across the map
+  * on SO, Dianne Hackborn says this is non trivial.
 
 * Add zooming to infinite levels
   * start with the map fully unzoomed

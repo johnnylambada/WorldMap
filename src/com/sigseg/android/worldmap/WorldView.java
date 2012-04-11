@@ -3,11 +3,8 @@
 import java.io.IOException;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -97,8 +94,6 @@ public class WorldView extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		int w = getWidth();
-		int h = getHeight();
 		
 		// tell the scene to update it's viewport bitmap
 		scene.update();
