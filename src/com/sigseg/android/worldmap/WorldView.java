@@ -1,4 +1,4 @@
-package com.sigseg.android.worldmap;
+																																																																																																																																																																				package com.sigseg.android.worldmap;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,12 +17,85 @@ import android.view.View;
 
 public class WorldView extends View {
 	private final static String TAG = "WorldView";
-	private BitmapFactory.Options bitmapFactoryOptions = new BitmapFactory.Options();
-	BitmapRegionDecoder decoder;
-	final Point leftTop = new Point(0,0);
-	final Point down = new Point(0,0);
-	final Point leftTopAtDown = new Point(0,0);
-	final Point size = new Point(0,0);
+	private final boolean DEBUG = true;
+
+	private final Point down = new Point(0,0);
+	private final Point leftTopAtDown = new Point(0,0);
+	private long startTime=0;
+	private final Background background = new Background();
+	
+	class Background {
+		private final String TAG = "Background";
+		private final boolean DEBUG = true;
+		
+		private InputStream is;
+		private Bitmap regionBitmap;
+		private BitmapRegionDecoder decoder;
+		private final BitmapFactory.Options options = new BitmapFactory.Options();
+		private int imageWidth, imageHeight;
+		private final Rect regionRect = new Rect();
+		
+		public Background(){
+			options.inPreferredConfig = Bitmap.Config.RGB_565;
+		}
+		
+		public Background setFile(Context context, String assetName ) throws IOException{
+			is = context.getAssets().open(assetName);
+			decoder = BitmapRegionDecoder.newInstance(is, false);
+
+			BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
+			tmpOptions.inJustDecodeBounds = true;
+			BitmapFactory.decodeStream(is, null, tmpOptions);
+			
+			imageWidth = tmpOptions.outWidth;
+			imageHeight = tmpOptions.outHeight;
+			if (DEBUG) Log.d(TAG, String.format("setFile() decoded width=%d height=%d",imageWidth, imageHeight));
+			return this;
+		}
+		
+		public int getImageWidth(){return imageWidth;}
+		public int getImageHeight(){return imageHeight;}
+		
+		public Background setRegionSize( int width, int height ){
+			regionRect.set(0, 0, width, height);
+			return this;
+		}
+		
+		public Background setRegionXY(int newX, int newY){
+			int w = regionRect.width();
+			int h = regionRect.height();
+
+        	// check bounds
+        	if (newX<0)		
+        		newX=0;
+        	
+        	if (newY<0)		
+        		newY=0;
+        	
+        	if (newX + w > imageWidth)
+        		newX = imageWidth - w;
+        	
+        	if (newY + h > imageHeight)
+        		newY = imageHeight - h;
+        	
+			regionRect.set(newX, newY, newX+w, newY+h);
+			return this;
+		}
+		
+		public Bitmap getBitmap(){
+			if (DEBUG) Log.d(TAG,"getBitmap() regionRect="+regionRect.toShortString());
+			regionBitmap = decoder.decodeRegion( regionRect, options );
+			return regionBitmap;
+		}
+
+		public int getRegionX() {
+			return regionRect.left;
+		}
+
+		public int getRegionY() {
+			return regionRect.top;
+		}
+	}
 	
 	public WorldView(Context context) {
 		super(context);
@@ -40,19 +113,18 @@ public class WorldView extends View {
 	}
 	
 	private void init(Context context){
-		bitmapFactoryOptions.inPreferredConfig = Bitmap.Config.RGB_565;
-		InputStream is;
 		try {
-			is = context.getAssets().open("world.jpg");
-			decoder = BitmapRegionDecoder.newInstance(is, false);
-			bitmapFactoryOptions.inJustDecodeBounds = true;
-			BitmapFactory.decodeStream(is, null, bitmapFactoryOptions);
-			size.x = bitmapFactoryOptions.outWidth;
-			size.y = bitmapFactoryOptions.outHeight;
-			Log.d(TAG, String.format("bitmap width=%d height=%d",size.x,size.y));
+			background.setFile(context, "world.jpg");
 		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
 		}
-		
+	}
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
+		background.setRegionSize(w,h);
+		Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d,oldw=%d,oldh=%d",w,h,oldw,oldh));
 	}
 
 	@Override
@@ -60,16 +132,21 @@ public class WorldView extends View {
 		super.onDraw(canvas);
 		int w = getWidth();
 		int h = getHeight();
-		Bitmap region = decoder.decodeRegion(
-				new Rect(leftTop.x,leftTop.y,leftTop.x+w,leftTop.y+h),
-				bitmapFactoryOptions
-				);
+		Bitmap region = background.getBitmap();
 		canvas.drawBitmap(
 				region, 
 				null,
 				new Rect(0,0,w,h),
 				null
 				);
+    	if (DEBUG){
+    		long now = System.currentTimeMillis();
+			double n = ((double)now)/1000L;
+			double s = ((double)startTime)/1000L;
+			double fps = 1L/(n-s);
+			Log.d(TAG,String.format("msec=%d FPS=%.2f",now-startTime,fps));
+			startTime = System.currentTimeMillis();
+    	}
 	}
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -77,27 +154,14 @@ public class WorldView extends View {
         case MotionEvent.ACTION_DOWN:
         	down.x = (int) event.getX();
         	down.y = (int) event.getY();
-        	leftTopAtDown.x = leftTop.x;
-        	leftTopAtDown.y = leftTop.y;
+        	leftTopAtDown.set(background.getRegionX(), background.getRegionY());
             return true;
         case MotionEvent.ACTION_MOVE:
         	int deltaX = (int) (event.getX()-down.x);
         	int deltaY = (int) (event.getY()-down.y);
         	int newX = (int) (leftTopAtDown.x - deltaX);
         	int newY = (int) (leftTopAtDown.y - deltaY);
-        	
-        	// check bounds
-        	if (newX<0)
-        		newX=0;
-        	if (newY<0)
-        		newY=0;
-        	if (newX + getWidth()>size.x)
-        		newX = size.x - getWidth();
-        	if (newY + getHeight()>size.y)
-        		newY = size.y - getHeight();
-        	
-        	leftTop.x = newX;
-        	leftTop.y = newY;
+        	background.setRegionXY(newX, newY);
         	invalidate();
         	return true;
         case MotionEvent.ACTION_UP:
