@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
@@ -23,6 +24,8 @@ public class WorldView extends View {
 	private final Point leftTopAtDown = new Point(0,0);
 	private long startTime=0;
 	private final Background background = new Background();
+	
+	private Bitmap screenBitmap = null;
 	
 	class Background {
 		private final String TAG = "Background";
@@ -82,12 +85,35 @@ public class WorldView extends View {
 			return this;
 		}
 		
-		public Bitmap getBitmap(){
+//		public Bitmap getBitmap(Bitmap screenBitmap){
+//			if (DEBUG) Log.d(TAG,"getBitmap() regionRect="+regionRect.toShortString());
+//			regionBitmap = decoder.decodeRegion( regionRect, options );
+//			return regionBitmap;
+//		}
+
+		public Bitmap getBitmap(Bitmap screenBitmap){
 			if (DEBUG) Log.d(TAG,"getBitmap() regionRect="+regionRect.toShortString());
-			regionBitmap = decoder.decodeRegion( regionRect, options );
-			return regionBitmap;
+			Bitmap bitmap;
+			if (regionBitmap==null){
+				Rect r = new Rect(regionRect);
+				r.right = Math.min(r.right + r.width(), imageWidth);
+				r.bottom = Math.min(r.bottom + r.height(), imageHeight);
+				regionBitmap = decoder.decodeRegion( r, options );
+			}
+//			bitmap = Bitmap.createBitmap(
+//					regionBitmap,
+//					regionRect.left, regionRect.top, regionRect.width(), regionRect.height());
+			Canvas screenBitmapCanvas = new Canvas(screenBitmap);
+			screenBitmapCanvas.drawBitmap(
+					regionBitmap,
+					regionRect,
+					new Rect(0, 0, regionRect.width(), regionRect.height()),
+					null);
+			return screenBitmap;
 		}
 
+		
+		
 		public int getRegionX() {
 			return regionRect.left;
 		}
@@ -124,6 +150,7 @@ public class WorldView extends View {
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		background.setRegionSize(w,h);
+		screenBitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
 		Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d,oldw=%d,oldh=%d",w,h,oldw,oldh));
 	}
 
@@ -132,7 +159,7 @@ public class WorldView extends View {
 		super.onDraw(canvas);
 		int w = getWidth();
 		int h = getHeight();
-		Bitmap region = background.getBitmap();
+		Bitmap region = background.getBitmap(screenBitmap);
 		canvas.drawBitmap(
 				region, 
 				null,
