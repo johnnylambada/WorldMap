@@ -45,8 +45,8 @@ class Scene {
 
 	private int width, height;
 
-	public final Viewport viewport;
-	public final Cache cache;
+	private final Viewport viewport;
+	private final Cache cache;
 
 	class Viewport {
 		/** Is the viewport ready to be used? */
@@ -54,51 +54,57 @@ class Scene {
 		/** The bitmap of the current viewport */
 		Bitmap bitmap = null;
 		/** A Rect that can be used for drawing. Same size as bitmap */
-		final Rect bitmapRect = new Rect(0,0,0,0);
+		final Rect identity = new Rect(0,0,0,0);
 		/** A Rect that defines where the Viewport is within the scene */
-		final Rect originRect = new Rect(0,0,0,0);
-		int getOriginX(){return originRect.left;}
-		int getOriginY(){return originRect.top;}
+		final Rect origin = new Rect(0,0,0,0);
 
 		void setOrigin(int x, int y){
-			int w = originRect.width();
-			int h = originRect.height();
-
-			// check bounds
-			if (x < 0)
-				x = 0;
-
-			if (y < 0)
-				y = 0;
-
-			if (x + w > width)
-				x = width - w;
-
-			if (y + h > height)
-				y = height - h;
-
-			originRect.set(x, y, x+w, y+h);
+			synchronized(this){
+				int w = origin.width();
+				int h = origin.height();
+	
+				// check bounds
+				if (x < 0)
+					x = 0;
+	
+				if (y < 0)
+					y = 0;
+	
+				if (x + w > width)
+					x = width - w;
+	
+				if (y + h > height)
+					y = height - h;
+	
+				origin.set(x, y, x+w, y+h);
+			}
 		}
 		
 		void setSize( int w, int h ){
-			if (bitmap==null){
-				// first time
-				bitmapRect.set(0, 0, w, h);
-				originRect.set( originRect.left, originRect.top, originRect.left + w, originRect.top + h);
-				bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
-				ready = true;
-			} else {
-				synchronized (bitmap) {
+			synchronized (this) {
+				if (bitmap!=null){
 					bitmap.recycle();
-					bitmapRect.set(0, 0, w, h);
-					originRect.set( originRect.left, originRect.top, originRect.left + w, originRect.top + h);
-					bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
+					bitmap = null;
 				}
+				bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
+				identity.set(0, 0, w, h);
+				origin.set(
+						origin.left,
+						origin.top,
+						origin.left + w,
+						origin.top + h);
 			}
 		}
 		
 		void update(){
 			cache.update(this);
+		}
+		
+		void draw(Canvas c){
+			synchronized (this){
+				if (bitmap!=null)
+					c.drawBitmap( bitmap, null, identity, null );
+			}
 		}
 	}
 	
@@ -108,7 +114,7 @@ class Scene {
 		/** What is the downsample size for the sample image? */
 		final int downShift = 3;
 		/** A Rect that defines where the Cache is within the scene */
-		final Rect originRect = new Rect(0,0,0,0);
+		final Rect origin = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
 		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
@@ -146,7 +152,6 @@ class Scene {
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
-			synchronized(viewport.bitmap){
 //			Bitmap bitmap;
 //			if (bitmapRef==null || bitmapRef.get()==null){
 //				// Start the cache off right
@@ -174,23 +179,24 @@ class Scene {
 //					srcRect,
 //					viewport.bitmapRect,
 //					null);
-				loadSampleIntoViewport(viewport);
-			}
+			loadSampleIntoViewport(viewport);
 		}
 		
 		void loadSampleIntoViewport(Viewport viewport){
-			Canvas c = new Canvas(viewport.bitmap);
-			int left   = (viewport.originRect.left>>downShift);
-			int top    = (viewport.originRect.top>>downShift);
-			int right  = left + (viewport.originRect.width()>>downShift);
-			int bottom = top + (viewport.originRect.height()>>downShift);
-			srcRect.set( left, top, right, bottom );
-			c.drawBitmap(
-				sampleBitmap,
-				srcRect,
-				viewport.bitmapRect,
-				null
-				);
+			synchronized(viewport){
+				Canvas c = new Canvas(viewport.bitmap);
+				int left   = (viewport.origin.left>>downShift);
+				int top    = (viewport.origin.top>>downShift);
+				int right  = left + (viewport.origin.width()>>downShift);
+				int bottom = top + (viewport.origin.height()>>downShift);
+				srcRect.set( left, top, right, bottom );
+				c.drawBitmap(
+					sampleBitmap,
+					srcRect,
+					viewport.identity,
+					null
+					);
+			}
 		}
 		
 		Point margin = new Point(0,0);
@@ -245,8 +251,8 @@ class Scene {
 				top = top - (bottom-height); // Adds overage on bottom back to top
 				bottom = height;
 			}
-			originRect.set(left, top, right, bottom);
-			if (DEBUG) Log.d(TAG,"new cache.originRect = "+originRect.toShortString()); 
+			origin.set(left, top, right, bottom);
+			if (DEBUG) Log.d(TAG,"new cache.originRect = "+origin.toShortString()); 
 		}
 	}
 
@@ -280,5 +286,32 @@ class Scene {
 	 */
 	public void update(){
 		viewport.update();
+	}
+	
+	/**
+	 * Get the origin
+	 * @return the Point of the origin
+	 */
+	public Point getOrigin(){
+		Point p = new Point();
+		synchronized(viewport){
+			p.set(viewport.origin.left, viewport.origin.top);
+		}
+		return p;
+	}
+	
+	/** Set the Origin */
+	public void setOrigin(int x, int y){
+		viewport.setOrigin(x, y);
+	}
+	
+	/** Set the size of the view within the scene */
+	public void setViewSize(int width, int height){
+		viewport.setSize(width, height);
+	}
+	
+	/** Draw the scene to the canvas. This op fills the canvas */
+	public void draw(Canvas c){
+		viewport.draw(c);
 	}
 }

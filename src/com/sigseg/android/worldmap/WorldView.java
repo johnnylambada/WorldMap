@@ -34,10 +34,8 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
         	inTouch = true;
         	viewDown.x = (int) event.getX();
         	viewDown.y = (int) event.getY();
-        	viewportOriginAtDown.set(
-        			scene.viewport.getOriginX(),
-        			scene.viewport.getOriginY()
-        			);
+        	Point p = scene.getOrigin();
+        	viewportOriginAtDown.set(p.x,p.y);
 		}
 		
 		void move(MotionEvent event){
@@ -47,7 +45,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	        	int newX = (int) (viewportOriginAtDown.x - deltaX);
 	        	int newY = (int) (viewportOriginAtDown.y - deltaY);
 	        	
-	        	scene.viewport.setOrigin(newX, newY);
+	        	scene.setOrigin(newX, newY);
 			}
 		}
 		
@@ -91,7 +89,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
-		scene.viewport.setSize(w, h);
+		scene.setViewSize(w, h);
 		if (DEBUG)
 			Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d,oldw=%d,oldh=%d",w,h,oldw,oldh));
 	}
@@ -104,12 +102,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 		scene.update();
 		
 		// draw it
-		canvas.drawBitmap(
-			scene.viewport.bitmap,
-			null,
-			scene.viewport.bitmapRect,
-			null
-			);
+		scene.draw(canvas);
     	if (DEBUG){
     		long now = System.currentTimeMillis();
 			double n = ((double)now)/1000L;
@@ -187,8 +180,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 		        try {
 		            c = surfaceHolder.lockCanvas(null);
 		            synchronized (surfaceHolder) {
-		            	if (scene.viewport.ready)
-		            		onDraw(c);
+	            		onDraw(c);
 		            }
 		        } finally {
 		            if (c != null) {
