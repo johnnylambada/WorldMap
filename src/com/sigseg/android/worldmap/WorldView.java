@@ -8,15 +8,17 @@ import android.graphics.Point;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
-public class WorldView extends View {
+public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	private final static String TAG = "WorldView";
 	private final boolean DEBUG = true;
 
 	private long startTime=0;
 	private final Scene scene = new Scene();
 	private final Touch touch = new Touch();
+	private DrawThread drawThread;
 	
 	class Touch {
 		/** Are we the middle of a touch event? */
@@ -76,6 +78,7 @@ public class WorldView extends View {
 	}
 	
 	private void init(Context context){
+		getHolder().addCallback(this);
 		try {
 			scene.setFile(context, "world.jpg");
 		} catch (IOException e) {
@@ -134,6 +137,64 @@ public class WorldView extends View {
         }
         return super.onTouchEvent(event);
     }
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+		onSizeChanged(width, height, 0, 0);
+	}
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		drawThread = new DrawThread(holder);
+		drawThread.setRunning(true);
+		drawThread.start();
+		
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+	    boolean retry = true;
+	    drawThread.setRunning(false);
+	    while (retry) {
+	        try {
+	            drawThread.join();
+	            retry = false;
+	        } catch (InterruptedException e) {
+	            // we will try it again and again...
+	        }
+	    }
+	}
+	
+	class DrawThread extends Thread {
+	    private SurfaceHolder surfaceHolder;
+	    private boolean running = false;
+	    
+	    public DrawThread(SurfaceHolder surfaceHolder){
+	    	this.surfaceHolder = surfaceHolder;
+	    }
+	    
+	    public void setRunning(boolean value){
+	    	running = value;
+	    }
+
+		@Override
+		public void run() {
+		    Canvas c;
+		    while (running) {
+		        c = null;
+		        try {
+		            c = surfaceHolder.lockCanvas(null);
+		            synchronized (surfaceHolder) {
+		                onDraw(c);
+		            }
+		        } finally {
+		            if (c != null) {
+		            	surfaceHolder.unlockCanvasAndPost(c);
+		            }
+		        }
+		    }		
+		}
+	}
 }
 
 
