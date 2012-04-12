@@ -101,12 +101,8 @@ class Scene {
 		
 		void draw(Canvas c){
 			synchronized (this){
-				c.drawBitmap(
-					bitmap,
-					null,
-					identity,
-					null
-					);
+				if (bitmap!=null)
+					c.drawBitmap( bitmap, null, identity, null );
 			}
 		}
 	}
