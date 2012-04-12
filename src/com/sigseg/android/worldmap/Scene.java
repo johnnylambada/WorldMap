@@ -2,6 +2,7 @@ package com.sigseg.android.worldmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -99,13 +100,13 @@ class Scene {
 	
 	class Cache {
 		/** What percent of total memory should we use for the cache? */
-		int percent = 25;
+		int percent = 25; // Above this and we get OOMs
 		/** A Rect that defines where the Cache is within the scene */
 		final Rect originRect = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
 		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
-		Bitmap bitmap = null;
+		WeakReference<Bitmap> bitmapRef = null;
 		private final BitmapFactory.Options options = new BitmapFactory.Options();
 		
 		public Cache(){
@@ -114,21 +115,22 @@ class Scene {
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
-			
-			if (bitmap==null){
+			Bitmap bitmap;
+			if (bitmapRef==null || bitmapRef.get()==null){
 				// Start the cache off right
 				if (DEBUG) Log.d(TAG,"decode first bitmap");
 				setOriginRect(viewport.originRect);
 				bitmap = decoder.decodeRegion( originRect, options );
+				bitmapRef = new WeakReference<Bitmap>(bitmap);
 			} else if (!originRect.contains(viewport.originRect)){
 				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
 				if (DEBUG) Log.d(TAG,"viewport not in cache");
 				setOriginRect(viewport.originRect);
-				bitmap.recycle();
-				bitmap = null;
 				bitmap = decoder.decodeRegion( originRect, options );
+				bitmapRef = new WeakReference<Bitmap>(bitmap);
 			} else {
 				// Happy case -- the cache already contains the Viewport
+				bitmap = bitmapRef.get();
 			}
 			int left   = viewport.originRect.left - originRect.left;
 			int top    = viewport.originRect.top  - originRect.top;
@@ -163,9 +165,7 @@ class Scene {
 		private void setOriginRect(Rect viewportRect ){
 			int vw = viewportRect.width();
 			int vh = viewportRect.height();
-//			int mw = vw; // marginWidth
-//			int mh = vh; // marginHeight 
-			calcMargin(viewportRect.width(),viewportRect.height());
+			calcMargin(vw,vh);
 			int mw = margin.x; 
 			int mh = margin.y;
 			
