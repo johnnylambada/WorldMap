@@ -42,6 +42,8 @@ import android.util.Log;
 class Scene {
 	private final String TAG = "Scene";
 	private final boolean DEBUG = true;
+	
+	private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY};
 
 	private int width, height;
 
@@ -108,6 +110,40 @@ class Scene {
 		}
 	}
 	
+	class CacheThread extends Thread {
+		final Cache cache;
+		CacheThread(Cache cache){
+			this.cache = cache;
+		}
+		@Override
+		public void run() {
+			Rect viewportRect = new Rect(0,0,0,0);
+			while(true){
+				while(cache.state!=CacheState.START_UPDATE)
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {}
+				boolean cont = false;
+				synchronized (cache) {
+					if (cache.state==CacheState.START_UPDATE){
+						cache.state = CacheState.IN_UPDATE;
+						cache.bitmapRef = null;
+						cont = true;
+					}
+				}
+				if (cont){
+					synchronized(viewport){
+						viewportRect.set(viewport.origin);
+					}
+					cache.setOriginRect(viewportRect);
+					Bitmap bitmap = cache.decoder.decodeRegion( cache.origin, cache.options );
+					cache.bitmapRef = new WeakReference<Bitmap>(bitmap);
+					cache.state = CacheState.READY;
+				}
+			}
+		}
+	}
+	
 	class Cache {
 		/** What percent of total memory should we use for the cache? */
 		final int percent = 25; // Above this and we get OOMs
@@ -119,6 +155,10 @@ class Scene {
 		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
 		WeakReference<Bitmap> bitmapRef = null;
+		CacheState state = CacheState.UNINITIALIZED;
+		
+		/** Our load from disk thread */
+		CacheThread cacheThread;
 		
 		private Bitmap sampleBitmap;
 
@@ -134,68 +174,101 @@ class Scene {
 			Point sceneDimensions = new Point(0,0);
 			BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
 
-			is = context.getAssets().open(assetName);
-			decoder = BitmapRegionDecoder.newInstance(is, false);
+			synchronized(this){
+				is = context.getAssets().open(assetName);
+				decoder = BitmapRegionDecoder.newInstance(is, false);
 
-			// Grab the bounds for the return value
-			tmpOptions.inJustDecodeBounds = true;
-			BitmapFactory.decodeStream(is, null, tmpOptions);
-			sceneDimensions.set(tmpOptions.outWidth, tmpOptions.outHeight);
-			
-			// Create the sample image
-			tmpOptions.inJustDecodeBounds = false;
-			tmpOptions.inSampleSize = (1<<downShift);
-			sampleBitmap = BitmapFactory.decodeStream(is, null, tmpOptions);
-
+				// Grab the bounds for the return value
+				tmpOptions.inJustDecodeBounds = true;
+				BitmapFactory.decodeStream(is, null, tmpOptions);
+				sceneDimensions.set(tmpOptions.outWidth, tmpOptions.outHeight);
+				
+				// Create the sample image
+				tmpOptions.inJustDecodeBounds = false;
+				tmpOptions.inSampleSize = (1<<downShift);
+				sampleBitmap = BitmapFactory.decodeStream(is, null, tmpOptions);
+				
+				// Create and start the thread
+				cacheThread = new CacheThread(this);
+				cacheThread.start();
+				
+				state = CacheState.INITIALIZED;
+			}
 			return sceneDimensions;
 		}
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
-//			Bitmap bitmap;
-//			if (bitmapRef==null || bitmapRef.get()==null){
-//				// Start the cache off right
-//				if (DEBUG) Log.d(TAG,"decode first bitmap");
-//				setOriginRect(viewport.originRect);
-//				bitmap = decoder.decodeRegion( originRect, options );
-//				bitmapRef = new WeakReference<Bitmap>(bitmap);
-//			} else if (!originRect.contains(viewport.originRect)){
-//				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
-//				if (DEBUG) Log.d(TAG,"viewport not in cache");
-//				setOriginRect(viewport.originRect);
-//				bitmap = decoder.decodeRegion( originRect, options );
-//				bitmapRef = new WeakReference<Bitmap>(bitmap);
-//			} else {
-//				// Happy case -- the cache already contains the Viewport
-//				bitmap = bitmapRef.get();
-//			}
-//			int left   = viewport.originRect.left - originRect.left;
-//			int top    = viewport.originRect.top  - originRect.top;
-//			int right  = left + viewport.originRect.width();
-//			int bottom = top  + viewport.originRect.height();
-//			srcRect.set( left, top, right, bottom );
-//			Canvas c = new Canvas(viewport.bitmap);
-//			c.drawBitmap(bitmap,
-//					srcRect,
-//					viewport.bitmapRect,
-//					null);
-			loadSampleIntoViewport(viewport);
+			synchronized(this){
+				switch(state){
+				case UNINITIALIZED:
+					// nothing can be done -- should never get here
+					break;
+				case INITIALIZED:
+					// time to cache some data
+					loadSampleIntoViewport(viewport);
+					state = CacheState.START_UPDATE;
+					break;
+				case START_UPDATE:
+					// I already told the thread to start
+					loadSampleIntoViewport(viewport);
+					break;
+				case IN_UPDATE:
+					// Already reading some data, just use the 
+					loadSampleIntoViewport(viewport);
+					break;
+				case READY:
+					// I have some data to show
+					if (bitmapRef==null || bitmapRef.get()==null){
+						// Start the cache off right
+						if (DEBUG) Log.d(TAG,"my bitmapRef disappeared");
+						loadSampleIntoViewport(viewport);
+						state = CacheState.START_UPDATE;
+					} else if (!origin.contains(viewport.origin)){
+						if (DEBUG) Log.d(TAG,"viewport not in cache");
+						loadSampleIntoViewport(viewport);
+						state = CacheState.START_UPDATE;
+					} else {
+						// Happy case -- the cache already contains the Viewport
+						Bitmap bitmap = bitmapRef.get();
+						loadBitmapIntoViewport(bitmap,viewport);
+					}
+					break;
+				}
+			}
+		}
+		
+		void loadBitmapIntoViewport(Bitmap bitmap, Viewport viewport){
+			synchronized(viewport){
+				int left   = viewport.origin.left - origin.left;
+				int top    = viewport.origin.top  - origin.top;
+				int right  = left + viewport.origin.width();
+				int bottom = top  + viewport.origin.height();
+				srcRect.set( left, top, right, bottom );
+				Canvas c = new Canvas(viewport.bitmap);
+				c.drawBitmap(bitmap,
+						srcRect,
+						viewport.identity,
+						null);
+			}
 		}
 		
 		void loadSampleIntoViewport(Viewport viewport){
-			synchronized(viewport){
-				Canvas c = new Canvas(viewport.bitmap);
-				int left   = (viewport.origin.left>>downShift);
-				int top    = (viewport.origin.top>>downShift);
-				int right  = left + (viewport.origin.width()>>downShift);
-				int bottom = top + (viewport.origin.height()>>downShift);
-				srcRect.set( left, top, right, bottom );
-				c.drawBitmap(
-					sampleBitmap,
-					srcRect,
-					viewport.identity,
-					null
-					);
+			if (state!=CacheState.UNINITIALIZED){
+				synchronized(viewport){
+					Canvas c = new Canvas(viewport.bitmap);
+					int left   = (viewport.origin.left>>downShift);
+					int top    = (viewport.origin.top>>downShift);
+					int right  = left + (viewport.origin.width()>>downShift);
+					int bottom = top + (viewport.origin.height()>>downShift);
+					srcRect.set( left, top, right, bottom );
+					c.drawBitmap(
+						sampleBitmap,
+						srcRect,
+						viewport.identity,
+						null
+						);
+				}
 			}
 		}
 		
