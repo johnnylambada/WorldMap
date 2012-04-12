@@ -10,6 +10,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Log;
@@ -42,14 +43,14 @@ class Scene {
 	private final String TAG = "Scene";
 	private final boolean DEBUG = true;
 
-	private InputStream is;
-	private BitmapRegionDecoder decoder;
 	private int width, height;
 
 	public final Viewport viewport;
 	public final Cache cache;
 
 	class Viewport {
+		/** Is the viewport ready to be used? */
+		boolean ready = false;
 		/** The bitmap of the current viewport */
 		Bitmap bitmap = null;
 		/** A Rect that can be used for drawing. Same size as bitmap */
@@ -80,17 +81,20 @@ class Scene {
 		}
 		
 		void setSize( int w, int h ){
-			if (bitmap!=null){
-				bitmap.recycle();
-				bitmap = null;
+			if (bitmap==null){
+				// first time
+				bitmapRect.set(0, 0, w, h);
+				originRect.set( originRect.left, originRect.top, originRect.left + w, originRect.top + h);
+				bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
+				ready = true;
+			} else {
+				synchronized (bitmap) {
+					bitmap.recycle();
+					bitmapRect.set(0, 0, w, h);
+					originRect.set( originRect.left, originRect.top, originRect.left + w, originRect.top + h);
+					bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
+				}
 			}
-			bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
-			bitmapRect.set(0, 0, w, h);
-			originRect.set(
-					originRect.left,
-					originRect.top,
-					originRect.left + w,
-					originRect.top + h);
 		}
 		
 		void update(){
@@ -100,48 +104,93 @@ class Scene {
 	
 	class Cache {
 		/** What percent of total memory should we use for the cache? */
-		int percent = 25; // Above this and we get OOMs
+		final int percent = 25; // Above this and we get OOMs
+		/** What is the downsample size for the sample image? */
+		final int downShift = 3;
 		/** A Rect that defines where the Cache is within the scene */
 		final Rect originRect = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
 		final Rect srcRect = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
 		WeakReference<Bitmap> bitmapRef = null;
+		
+		private Bitmap sampleBitmap;
+
 		private final BitmapFactory.Options options = new BitmapFactory.Options();
+		private InputStream is;
+		private BitmapRegionDecoder decoder;
 		
 		public Cache(){
 			options.inPreferredConfig = Bitmap.Config.RGB_565;
 		}
 		
+		public Point setFile(Context context, String assetName) throws IOException {
+			Point sceneDimensions = new Point(0,0);
+			BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
+
+			is = context.getAssets().open(assetName);
+			decoder = BitmapRegionDecoder.newInstance(is, false);
+
+			// Grab the bounds for the return value
+			tmpOptions.inJustDecodeBounds = true;
+			BitmapFactory.decodeStream(is, null, tmpOptions);
+			sceneDimensions.set(tmpOptions.outWidth, tmpOptions.outHeight);
+			
+			// Create the sample image
+			tmpOptions.inJustDecodeBounds = false;
+			tmpOptions.inSampleSize = (1<<downShift);
+			sampleBitmap = BitmapFactory.decodeStream(is, null, tmpOptions);
+
+			return sceneDimensions;
+		}
+		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
-			Bitmap bitmap;
-			if (bitmapRef==null || bitmapRef.get()==null){
-				// Start the cache off right
-				if (DEBUG) Log.d(TAG,"decode first bitmap");
-				setOriginRect(viewport.originRect);
-				bitmap = decoder.decodeRegion( originRect, options );
-				bitmapRef = new WeakReference<Bitmap>(bitmap);
-			} else if (!originRect.contains(viewport.originRect)){
-				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
-				if (DEBUG) Log.d(TAG,"viewport not in cache");
-				setOriginRect(viewport.originRect);
-				bitmap = decoder.decodeRegion( originRect, options );
-				bitmapRef = new WeakReference<Bitmap>(bitmap);
-			} else {
-				// Happy case -- the cache already contains the Viewport
-				bitmap = bitmapRef.get();
+			synchronized(viewport.bitmap){
+//			Bitmap bitmap;
+//			if (bitmapRef==null || bitmapRef.get()==null){
+//				// Start the cache off right
+//				if (DEBUG) Log.d(TAG,"decode first bitmap");
+//				setOriginRect(viewport.originRect);
+//				bitmap = decoder.decodeRegion( originRect, options );
+//				bitmapRef = new WeakReference<Bitmap>(bitmap);
+//			} else if (!originRect.contains(viewport.originRect)){
+//				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
+//				if (DEBUG) Log.d(TAG,"viewport not in cache");
+//				setOriginRect(viewport.originRect);
+//				bitmap = decoder.decodeRegion( originRect, options );
+//				bitmapRef = new WeakReference<Bitmap>(bitmap);
+//			} else {
+//				// Happy case -- the cache already contains the Viewport
+//				bitmap = bitmapRef.get();
+//			}
+//			int left   = viewport.originRect.left - originRect.left;
+//			int top    = viewport.originRect.top  - originRect.top;
+//			int right  = left + viewport.originRect.width();
+//			int bottom = top  + viewport.originRect.height();
+//			srcRect.set( left, top, right, bottom );
+//			Canvas c = new Canvas(viewport.bitmap);
+//			c.drawBitmap(bitmap,
+//					srcRect,
+//					viewport.bitmapRect,
+//					null);
+				loadSampleIntoViewport(viewport);
 			}
-			int left   = viewport.originRect.left - originRect.left;
-			int top    = viewport.originRect.top  - originRect.top;
-			int right  = left + viewport.originRect.width();
-			int bottom = top  + viewport.originRect.height();
-			srcRect.set( left, top, right, bottom );
+		}
+		
+		void loadSampleIntoViewport(Viewport viewport){
 			Canvas c = new Canvas(viewport.bitmap);
-			c.drawBitmap(bitmap,
-					srcRect,
-					viewport.bitmapRect,
-					null);
+			int left   = (viewport.originRect.left>>downShift);
+			int top    = (viewport.originRect.top>>downShift);
+			int right  = left + (viewport.originRect.width()>>downShift);
+			int bottom = top + (viewport.originRect.height()>>downShift);
+			srcRect.set( left, top, right, bottom );
+			c.drawBitmap(
+				sampleBitmap,
+				srcRect,
+				viewport.bitmapRect,
+				null
+				);
 		}
 		
 		Point margin = new Point(0,0);
@@ -216,15 +265,11 @@ class Scene {
 	 * @throws IOException
 	 */
 	public void setFile(Context context, String assetName) throws IOException {
-		is = context.getAssets().open(assetName);
-		decoder = BitmapRegionDecoder.newInstance(is, false);
 
-		BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
-		tmpOptions.inJustDecodeBounds = true;
-		BitmapFactory.decodeStream(is, null, tmpOptions);
+		Point p = cache.setFile(context, assetName);
+		width = p.x;
+		height = p.y;
 
-		width = tmpOptions.outWidth;
-		height = tmpOptions.outHeight;
 		if (DEBUG)
 			Log.d(TAG, String.format("setFile() decoded width=%d height=%d",
 					width, height));

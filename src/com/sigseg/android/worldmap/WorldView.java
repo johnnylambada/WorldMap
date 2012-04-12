@@ -2,6 +2,8 @@
 
 import java.io.IOException;
 
+import com.sigseg.android.worldmap.Scene.Viewport;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
@@ -103,11 +105,11 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 		
 		// draw it
 		canvas.drawBitmap(
-				scene.viewport.bitmap,
-				null,
-				scene.viewport.bitmapRect,
-				null
-				);
+			scene.viewport.bitmap,
+			null,
+			scene.viewport.bitmapRect,
+			null
+			);
     	if (DEBUG){
     		long now = System.currentTimeMillis();
 			double n = ((double)now)/1000L;
@@ -185,7 +187,8 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 		        try {
 		            c = surfaceHolder.lockCanvas(null);
 		            synchronized (surfaceHolder) {
-		                onDraw(c);
+		            	if (scene.viewport.ready)
+		            		onDraw(c);
 		            }
 		        } finally {
 		            if (c != null) {
