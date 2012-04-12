@@ -108,7 +108,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 			double n = ((double)now)/1000L;
 			double s = ((double)startTime)/1000L;
 			double fps = 1L/(n-s);
-			Log.d(TAG,String.format("msec=%d FPS=%.2f",now-startTime,fps));
+//			Log.d(TAG,String.format("msec=%d FPS=%.2f",now-startTime,fps));
 			startTime = System.currentTimeMillis();
     	}
 	}

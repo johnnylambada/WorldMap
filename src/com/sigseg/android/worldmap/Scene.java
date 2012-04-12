@@ -199,57 +199,65 @@ class Scene {
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
+			boolean loadSample = true;
+			Bitmap bitmap = null;
 			synchronized(this){
 				switch(state){
 				case UNINITIALIZED:
 					// nothing can be done -- should never get here
-					break;
+					return;
 				case INITIALIZED:
 					// time to cache some data
-					loadSampleIntoViewport(viewport);
+					loadSample=true;
 					state = CacheState.START_UPDATE;
 					break;
 				case START_UPDATE:
 					// I already told the thread to start
-					loadSampleIntoViewport(viewport);
+					loadSample=true;
 					break;
 				case IN_UPDATE:
-					// Already reading some data, just use the 
-					loadSampleIntoViewport(viewport);
+					// Already reading some data, just use the sample 
+					loadSample=true;
 					break;
 				case READY:
 					// I have some data to show
 					if (bitmapRef==null || bitmapRef.get()==null){
 						// Start the cache off right
 						if (DEBUG) Log.d(TAG,"my bitmapRef disappeared");
-						loadSampleIntoViewport(viewport);
+						loadSample=true;
 						state = CacheState.START_UPDATE;
 					} else if (!origin.contains(viewport.origin)){
 						if (DEBUG) Log.d(TAG,"viewport not in cache");
-						loadSampleIntoViewport(viewport);
+						loadSample=true;
 						state = CacheState.START_UPDATE;
 					} else {
 						// Happy case -- the cache already contains the Viewport
-						Bitmap bitmap = bitmapRef.get();
-						loadBitmapIntoViewport(bitmap,viewport);
+						bitmap = bitmapRef.get();
+						loadSample = false;
 					}
 					break;
 				}
 			}
+			if (loadSample)
+				loadSampleIntoViewport(viewport);
+			else
+				loadBitmapIntoViewport(bitmap, viewport);
 		}
 		
 		void loadBitmapIntoViewport(Bitmap bitmap, Viewport viewport){
-			synchronized(viewport){
-				int left   = viewport.origin.left - origin.left;
-				int top    = viewport.origin.top  - origin.top;
-				int right  = left + viewport.origin.width();
-				int bottom = top  + viewport.origin.height();
-				srcRect.set( left, top, right, bottom );
-				Canvas c = new Canvas(viewport.bitmap);
-				c.drawBitmap(bitmap,
-						srcRect,
-						viewport.identity,
-						null);
+			if (bitmap!=null){
+				synchronized(viewport){
+					int left   = viewport.origin.left - origin.left;
+					int top    = viewport.origin.top  - origin.top;
+					int right  = left + viewport.origin.width();
+					int bottom = top  + viewport.origin.height();
+					srcRect.set( left, top, right, bottom );
+					Canvas c = new Canvas(viewport.bitmap);
+					c.drawBitmap(bitmap,
+							srcRect,
+							viewport.identity,
+							null);
+				}
 			}
 		}
 		
