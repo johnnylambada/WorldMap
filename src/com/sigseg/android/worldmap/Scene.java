@@ -9,6 +9,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Log;
 
@@ -97,6 +98,8 @@ class Scene {
 	}
 	
 	class Cache {
+		/** What percent of total memory should we use for the cache? */
+		int percent = 25;
 		/** A Rect that defines where the Cache is within the scene */
 		final Rect originRect = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
@@ -121,6 +124,8 @@ class Scene {
 				// Have to refresh the Cache -- the Viewport isn't completely within the Cache
 				if (DEBUG) Log.d(TAG,"viewport not in cache");
 				setOriginRect(viewport.originRect);
+				bitmap.recycle();
+				bitmap = null;
 				bitmap = decoder.decodeRegion( originRect, options );
 			} else {
 				// Happy case -- the cache already contains the Viewport
@@ -137,12 +142,32 @@ class Scene {
 					null);
 		}
 		
+		Point margin = new Point(0,0);
+		void calcMargin(int width, int height){
+			long bytesToUse = Runtime.getRuntime().maxMemory() * percent / 100;
+			
+			int mwidth = 0;
+			int mheight= 0;
+			int pwidth = mwidth;
+			int pheight = mheight;
+			while((width+mwidth) * (height+mheight) * 2 < bytesToUse){
+				pwidth = mwidth++;
+				pheight = mheight++;
+			}
+			margin.set(pwidth, pheight);
+			if (Application.DEBUG)
+				Log.d(TAG,String.format("margin set to w=%d h=%d for %d bytes",margin.x,margin.y,bytesToUse));
+		}
+		
 		/** Figure out the originRect based on the viewportRect */
 		private void setOriginRect(Rect viewportRect ){
 			int vw = viewportRect.width();
 			int vh = viewportRect.height();
-			int mw = vw; // marginWidth
-			int mh = vh; // marginHeight 
+//			int mw = vw; // marginWidth
+//			int mh = vh; // marginHeight 
+			calcMargin(viewportRect.width(),viewportRect.height());
+			int mw = margin.x; 
+			int mh = margin.y;
 			
 			if (vw+mw > width)
 				mw = Math.max(0, width-vw);
