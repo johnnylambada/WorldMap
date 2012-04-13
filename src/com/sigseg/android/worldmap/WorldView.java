@@ -2,8 +2,6 @@
 
 import java.io.IOException;
 
-import com.sigseg.android.worldmap.Scene.Viewport;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
@@ -17,7 +15,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	private final static String TAG = "WorldView";
 	private final boolean DEBUG = true;
 
-	private long startTime=0;
+//	private long startTime=0;
 	private final Scene scene = new Scene();
 	private final Touch touch = new Touch();
 	private DrawThread drawThread;
@@ -103,14 +101,14 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 		
 		// draw it
 		scene.draw(canvas);
-    	if (DEBUG){
-    		long now = System.currentTimeMillis();
-			double n = ((double)now)/1000L;
-			double s = ((double)startTime)/1000L;
-			double fps = 1L/(n-s);
+//    	if (DEBUG){
+//    		long now = System.currentTimeMillis();
+//			double n = ((double)now)/1000L;
+//			double s = ((double)startTime)/1000L;
+//			double fps = 1L/(n-s);
 //			Log.d(TAG,String.format("msec=%d FPS=%.2f",now-startTime,fps));
-			startTime = System.currentTimeMillis();
-    	}
+//			startTime = System.currentTimeMillis();
+//    	}
 	}
 	
     @Override
@@ -141,15 +139,17 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		drawThread = new DrawThread(holder);
+		drawThread.setName("drawThread");
 		drawThread.setRunning(true);
 		drawThread.start();
-		
+		scene.start();
 	}
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
-	    boolean retry = true;
+	    scene.stop();
 	    drawThread.setRunning(false);
+	    boolean retry = true;
 	    while (retry) {
 	        try {
 	            drawThread.join();
@@ -162,16 +162,14 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback{
 	
 	class DrawThread extends Thread {
 	    private SurfaceHolder surfaceHolder;
+
 	    private boolean running = false;
+	    public void setRunning(boolean value){ running = value; }
 	    
 	    public DrawThread(SurfaceHolder surfaceHolder){
 	    	this.surfaceHolder = surfaceHolder;
 	    }
 	    
-	    public void setRunning(boolean value){
-	    	running = value;
-	    }
-
 		@Override
 		public void run() {
 		    Canvas c;
