@@ -15,7 +15,6 @@ import android.view.SurfaceView;
 
 public class WorldView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
 	private final static String TAG = "WorldView";
-	private final boolean DEBUG = true;
 
 //	private long startTime=0;
 	private final Scene scene = new Scene();
@@ -54,47 +53,45 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	//[end]
 	//[start] OnGestureListener
 	@Override
-	public boolean onDown(MotionEvent e) {
-		Log.d(TAG,"onDown");
-		return false;
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+		return touch.fling( e1, e2, velocityX, velocityY);
 	}
-
+	//[start] the rest are defaults
 	@Override
-	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
-			float velocityY) {
-		Log.d(TAG,"onFling");
+	public boolean onDown(MotionEvent e) {
+//		Log.d(TAG,"onDown");
 		return false;
 	}
 
 	@Override
 	public void onLongPress(MotionEvent e) {
-		Log.d(TAG,"onLongPress");
+//		Log.d(TAG,"onLongPress");
 	}
 
 	@Override
-	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
-			float distanceY) {
-		Log.d(TAG,"onScroll");
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+//		Log.d(TAG,"onScroll");
 		return false;
 	}
 
 	@Override
 	public void onShowPress(MotionEvent e) {
-		Log.d(TAG,"onShowPress");
+//		Log.d(TAG,"onShowPress");
 	}
 
 	@Override
 	public boolean onSingleTapUp(MotionEvent e) {
-		Log.d(TAG,"onSingleTapUp");
+//		Log.d(TAG,"onSingleTapUp");
 		return false;
 	}
 	// [end]
+	//[end]
 	//[start] View overrides
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		scene.setViewSize(w, h);
-		if (DEBUG)
+		if (Application.DEBUG)
 			Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d,oldw=%d,oldh=%d",w,h,oldw,oldh));
 	}
 
@@ -122,19 +119,10 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
     	if (consumed)
     		return true;
         switch (me.getAction()) {
-        case MotionEvent.ACTION_DOWN:
-        	touch.down(me);
-            return true;
-        case MotionEvent.ACTION_MOVE:
-        	touch.move(me);
-        	invalidate();
-        	return true;
-        case MotionEvent.ACTION_UP:
-        	touch.up(me);
-        	return true;
-        case MotionEvent.ACTION_CANCEL:
-        	touch.cancel(me);
-        	return true;
+	        case MotionEvent.ACTION_DOWN: return touch.down(me);
+	        case MotionEvent.ACTION_MOVE: return touch.move(me);
+	        case MotionEvent.ACTION_UP: return touch.up(me);
+	        case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
         }
         return super.onTouchEvent(me);
     }
@@ -183,6 +171,10 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		public void run() {
 		    Canvas c;
 		    while (running) {
+		    	try {
+		    		// Don't hog the entire CPU
+					Thread.sleep(5);
+				} catch (InterruptedException e) {}
 		        c = null;
 		        try {
 		            c = surfaceHolder.lockCanvas(null);
@@ -205,15 +197,21 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		/** What was the coordinates of the viewport origin? */
 		final Point viewportOriginAtDown = new Point(0,0); 
 		
-		void down(MotionEvent event){
+		boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
+			inTouch = false;
+			Log.d(TAG,"fling!");
+			return true;
+		}
+		boolean down(MotionEvent event){
         	inTouch = true;
         	viewDown.x = (int) event.getX();
         	viewDown.y = (int) event.getY();
         	Point p = scene.getOrigin();
         	viewportOriginAtDown.set(p.x,p.y);
+        	return true;
 		}
 		
-		void move(MotionEvent event){
+		boolean move(MotionEvent event){
 			if (inTouch){
 	        	int deltaX = (int) (event.getX()-viewDown.x);
 	        	int deltaY = (int) (event.getY()-viewDown.y);
@@ -221,19 +219,23 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	        	int newY = (int) (viewportOriginAtDown.y - deltaY);
 	        	
 	        	scene.setOrigin(newX, newY);
+	        	invalidate();
 			}
+			return true;
 		}
 		
-		void up(MotionEvent event){
+		boolean up(MotionEvent event){
 			if (inTouch){
 				inTouch = false;
 			}
+			return true;
 		}
 		
-		void cancel(MotionEvent event){
+		boolean cancel(MotionEvent event){
 			if (inTouch){
 				inTouch = false;
 			}
+			return true;
 		}
 	}
 }
