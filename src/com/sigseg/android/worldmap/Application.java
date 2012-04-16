@@ -3,7 +3,7 @@ package com.sigseg.android.worldmap;
 import android.util.Log;
 
 public class Application extends android.app.Application {
-	private final static String TAG = "Application";
+//	private final static String TAG = "Application";
 	public final static boolean DEBUG = true;
 	
 	@Override
