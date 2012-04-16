@@ -6,6 +6,7 @@ import java.io.InputStream;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 
@@ -13,7 +14,10 @@ public class InputStreamScene extends Scene {
 //	private static final String TAG="FileBackedScene";
 	
 	private final BitmapFactory.Options options = new BitmapFactory.Options();
-	public BitmapRegionDecoder decoder;
+	private BitmapRegionDecoder decoder;
+	private Bitmap sampleBitmap;
+	/** What is the downsample size for the sample image? */
+	private final int downShift = 3;
 	
 	public InputStreamScene(){
 		options.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -40,10 +44,10 @@ public class InputStreamScene extends Scene {
 			
 			// Create the sample image
 			tmpOptions.inJustDecodeBounds = false;
-			tmpOptions.inSampleSize = (1<<cache.downShift);
-			cache.sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
+			tmpOptions.inSampleSize = (1<<downShift);
+			sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
 			
-			cache.state = CacheState.INITIALIZED;
+			initialize();
 		}
 		width = sceneDimensions.x;
 		height = sceneDimensions.y;
@@ -55,5 +59,24 @@ public class InputStreamScene extends Scene {
 	public Bitmap fillCache(Rect origin) {
 		Bitmap bitmap = decoder.decodeRegion( origin, options );
 		return bitmap;
+	}
+
+
+	@Override
+	public void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point) {
+		Canvas c = new Canvas(bitmap);
+		int left   = (point.x>>downShift);
+		int top    = (point.y>>downShift);
+		int right  = left + (c.getWidth()>>downShift);
+		int bottom = top + (c.getHeight()>>downShift);
+		Rect srcRect = new Rect( left, top, right, bottom );
+		Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
+		c.drawBitmap(
+			sampleBitmap,
+			srcRect,
+			identity,
+			null
+			);
+
 	}
 }

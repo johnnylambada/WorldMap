@@ -74,6 +74,10 @@ public abstract class Scene {
 		cache.stop();
 	}
 	
+	public void initialize(){
+		cache.state = CacheState.INITIALIZED;
+	}
+	
 	/** Set the Origin */
 	public void setOrigin(int x, int y){
 		viewport.setOrigin(x, y);
@@ -91,6 +95,7 @@ public abstract class Scene {
 	//[end]
 	//[start] public abstract
 	public abstract Bitmap fillCache(Rect origin);
+	public abstract void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point);
 	//[end]
 	//[start] class Viewport
 	private class Viewport {
@@ -154,14 +159,14 @@ public abstract class Scene {
 	/**
 	 * Keep track of the cached bitmap
 	 */
-	class Cache {
+	private class Cache {
 		/** What percent of total memory should we use for the cache? The bigger the cache,
 		 * the longer it takes to read -- 1.2 secs for 25%, 600ms for 10%, 500ms for 5%.
 		 * User experience seems to be best for smaller values. 
 		 */
 		int percent = 5; // Above 25 and we get OOMs
-		/** What is the downsample size for the sample image? */
-		final int downShift = 3;
+//		/** What is the downsample size for the sample image? */
+//		final int downShift = 3;
 		/** A Rect that defines where the Cache is within the scene 1=1/2, 2=1/4 3=1/8, etc */
 		final Rect origin = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
@@ -173,7 +178,7 @@ public abstract class Scene {
 		/** Our load from disk thread */
 		CacheThread cacheThread;
 		
-		Bitmap sampleBitmap;
+//		Bitmap sampleBitmap;
 
 		public void start(){
 			cacheThread = new CacheThread(this);
@@ -262,18 +267,22 @@ public abstract class Scene {
 		void loadSampleIntoViewport(Viewport viewport){
 			if (state!=CacheState.UNINITIALIZED){
 				synchronized(viewport){
-					Canvas c = new Canvas(viewport.bitmap);
-					int left   = (viewport.origin.left>>downShift);
-					int top    = (viewport.origin.top>>downShift);
-					int right  = left + (viewport.origin.width()>>downShift);
-					int bottom = top + (viewport.origin.height()>>downShift);
-					srcRect.set( left, top, right, bottom );
-					c.drawBitmap(
-						sampleBitmap,
-						srcRect,
-						viewport.identity,
-						null
-						);
+					drawSampleIntoBitmapAtPoint(
+							viewport.bitmap, 
+							new Point(viewport.origin.left,viewport.origin.top)
+							);
+//					Canvas c = new Canvas(viewport.bitmap);
+//					int left   = (viewport.origin.left>>downShift);
+//					int top    = (viewport.origin.top>>downShift);
+//					int right  = left + (viewport.origin.width()>>downShift);
+//					int bottom = top + (viewport.origin.height()>>downShift);
+//					srcRect.set( left, top, right, bottom );
+//					c.drawBitmap(
+//						sampleBitmap,
+//						srcRect,
+//						viewport.identity,
+//						null
+//						);
 				}
 			}
 		}
