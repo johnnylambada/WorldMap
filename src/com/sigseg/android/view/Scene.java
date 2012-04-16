@@ -36,12 +36,12 @@ public abstract class Scene {
 	private final String TAG = "Scene";
 	private final boolean DEBUG = true;
 	
-	protected enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY};
+	private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY};
 
 	protected int width, height;
 
-	protected final Viewport viewport;
-	protected final Cache cache;
+	private final Viewport viewport;
+	private final Cache cache;
 
 	//[start] constructor
 	/**
@@ -75,7 +75,9 @@ public abstract class Scene {
 	}
 	
 	public void initialize(){
-		cache.state = CacheState.INITIALIZED;
+		synchronized(cache){
+			cache.state = CacheState.INITIALIZED;
+		}
 	}
 	
 	/** Set the Origin */
@@ -94,8 +96,8 @@ public abstract class Scene {
 	}
 	//[end]
 	//[start] public abstract
-	public abstract Bitmap fillCache(Rect origin);
-	public abstract void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point);
+	protected abstract Bitmap fillCache(Rect origin);
+	protected abstract void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point);
 	//[end]
 	//[start] class Viewport
 	private class Viewport {
@@ -174,20 +176,24 @@ public abstract class Scene {
 		/** The bitmap of the current cache */
 		Bitmap bitmapRef = null;
 		CacheState state = CacheState.UNINITIALIZED;
+		Point margin = new Point(0,0);
+
 		
 		/** Our load from disk thread */
 		CacheThread cacheThread;
 		
 //		Bitmap sampleBitmap;
 
-		public void start(){
+		void start(){
 			cacheThread = new CacheThread(this);
 			cacheThread.setName("cacheThread");
 			cacheThread.start();
 		}
 		
-		public void stop(){
+		void stop(){
 			cacheThread.running = false;
+			cacheThread.interrupt();
+
 		    boolean retry = true;
 		    while (retry) {
 		        try {
@@ -213,6 +219,7 @@ public abstract class Scene {
 					// time to cache some data
 					loadSample=true;
 					state = CacheState.START_UPDATE;
+					cacheThread.interrupt();
 					break;
 				case START_UPDATE:
 					// I already told the thread to start
@@ -229,10 +236,12 @@ public abstract class Scene {
 						if (DEBUG) Log.d(TAG,"bitmapRef is null");
 						loadSample=true;
 						state = CacheState.START_UPDATE;
+						cacheThread.interrupt();
 					} else if (!origin.contains(viewport.origin)){
 						if (DEBUG) Log.d(TAG,"viewport not in cache");
 						loadSample=true;
 						state = CacheState.START_UPDATE;
+						cacheThread.interrupt();
 					} else {
 						// Happy case -- the cache already contains the Viewport
 						bitmap = bitmapRef;
@@ -268,26 +277,13 @@ public abstract class Scene {
 			if (state!=CacheState.UNINITIALIZED){
 				synchronized(viewport){
 					drawSampleIntoBitmapAtPoint(
-							viewport.bitmap, 
-							new Point(viewport.origin.left,viewport.origin.top)
-							);
-//					Canvas c = new Canvas(viewport.bitmap);
-//					int left   = (viewport.origin.left>>downShift);
-//					int top    = (viewport.origin.top>>downShift);
-//					int right  = left + (viewport.origin.width()>>downShift);
-//					int bottom = top + (viewport.origin.height()>>downShift);
-//					srcRect.set( left, top, right, bottom );
-//					c.drawBitmap(
-//						sampleBitmap,
-//						srcRect,
-//						viewport.identity,
-//						null
-//						);
+						viewport.bitmap, 
+						new Point(viewport.origin.left,viewport.origin.top)
+						);
 				}
 			}
 		}
 		
-		Point margin = new Point(0,0);
 		void calcMargin(int width, int height){
 			long bytesToUse = Runtime.getRuntime().maxMemory() * percent / 100;
 			
@@ -300,11 +296,10 @@ public abstract class Scene {
 				pheight = mheight++;
 			}
 			margin.set(pwidth, pheight);
-//			Log.d(TAG,String.format("margin set to w=%d h=%d for %d bytes",margin.x,margin.y,bytesToUse));
 		}
 		
 		/** Figure out the originRect based on the viewportRect */
-		private void setOriginRect(Rect viewportRect ){
+		void setOriginRect(Rect viewportRect ){
 			int vw = viewportRect.width();
 			int vh = viewportRect.height();
 			calcMargin(vw,vh);
@@ -353,8 +348,8 @@ public abstract class Scene {
 	 */
 	class CacheThread extends Thread {
 		final Cache cache;
-	    private boolean running = false;
-	    public void setRunning(boolean value){ 
+	    boolean running = false;
+	    void setRunning(boolean value){ 
 	    	running = value; 
 	    }
 	    
@@ -368,7 +363,7 @@ public abstract class Scene {
 			while(running){
 				while(cache.state!=CacheState.START_UPDATE)
 					try {
-						Thread.sleep(5);
+						Thread.sleep(Integer.MAX_VALUE);
 						if (!running)
 							return;
 					} catch (InterruptedException e) {}

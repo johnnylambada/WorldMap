@@ -11,7 +11,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 public class InputStreamScene extends Scene {
-//	private static final String TAG="FileBackedScene";
+//	private static final String TAG="InputStreamScene";
 	
 	private final BitmapFactory.Options options = new BitmapFactory.Options();
 	private BitmapRegionDecoder decoder;
@@ -31,39 +31,34 @@ public class InputStreamScene extends Scene {
 	 * @throws IOException
 	 */
 	public void setInputStream(InputStream inputStream) throws IOException {
-		Point sceneDimensions = new Point(0,0);
 		BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
 
-		synchronized(cache){
-			this.decoder = BitmapRegionDecoder.newInstance(inputStream, false);
+		this.decoder = BitmapRegionDecoder.newInstance(inputStream, false);
 
-			// Grab the bounds for the return value
-			tmpOptions.inJustDecodeBounds = true;
-			BitmapFactory.decodeStream(inputStream, null, tmpOptions);
-			sceneDimensions.set(tmpOptions.outWidth, tmpOptions.outHeight);
-			
-			// Create the sample image
-			tmpOptions.inJustDecodeBounds = false;
-			tmpOptions.inSampleSize = (1<<downShift);
-			sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
-			
-			initialize();
-		}
-		width = sceneDimensions.x;
-		height = sceneDimensions.y;
-//		Log.d(TAG, String.format("setFile() decoded width=%d height=%d", width, height));
+		// Grab the bounds for the scene dimensions
+		tmpOptions.inJustDecodeBounds = true;
+		BitmapFactory.decodeStream(inputStream, null, tmpOptions);
+		width = tmpOptions.outWidth;
+		height = tmpOptions.outHeight;
+		
+		// Create the sample image
+		tmpOptions.inJustDecodeBounds = false;
+		tmpOptions.inSampleSize = (1<<downShift);
+		sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
+		
+		initialize();
 	}
 
 
 	@Override
-	public Bitmap fillCache(Rect origin) {
+	protected Bitmap fillCache(Rect origin) {
 		Bitmap bitmap = decoder.decodeRegion( origin, options );
 		return bitmap;
 	}
 
 
 	@Override
-	public void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point) {
+	protected void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point) {
 		Canvas c = new Canvas(bitmap);
 		int left   = (point.x>>downShift);
 		int top    = (point.y>>downShift);
