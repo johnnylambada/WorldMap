@@ -45,7 +45,7 @@ public abstract class Scene {
 
 	//[start] constructor
 	/**
-	 * Create a new BigBitmap. Inexpensive operation.
+	 * Create a new Scene. Inexpensive operation.
 	 */
 	public Scene() {
 		cache = new Cache();
@@ -95,7 +95,7 @@ public abstract class Scene {
 		viewport.draw(c);
 	}
 	//[end]
-	//[start] public abstract
+	//[start] protected abstract
 	protected abstract Bitmap fillCache(Rect origin);
 	protected abstract void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point);
 	//[end]
@@ -167,8 +167,6 @@ public abstract class Scene {
 		 * User experience seems to be best for smaller values. 
 		 */
 		int percent = 5; // Above 25 and we get OOMs
-//		/** What is the downsample size for the sample image? */
-//		final int downShift = 3;
 		/** A Rect that defines where the Cache is within the scene 1=1/2, 2=1/4 3=1/8, etc */
 		final Rect origin = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
@@ -182,8 +180,6 @@ public abstract class Scene {
 		/** Our load from disk thread */
 		CacheThread cacheThread;
 		
-//		Bitmap sampleBitmap;
-
 		void start(){
 			cacheThread = new CacheThread(this);
 			cacheThread.setName("cacheThread");
