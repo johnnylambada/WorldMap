@@ -1,6 +1,7 @@
 																																																																																																																																																																				package com.sigseg.android.worldmap;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -13,11 +14,13 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.sigseg.android.view.InputStreamScene;
+
 public class WorldView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
 	private final static String TAG = "WorldView";
 
 //	private long startTime=0;
-	private final Scene scene = new Scene();
+	private final InputStreamScene scene = new InputStreamScene();
 	
 	
 	private final Touch touch = new Touch();
@@ -26,32 +29,6 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	private DrawThread drawThread;
 	
 	//[start] View overrides
-	@Override
-	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		super.onSizeChanged(w, h, oldw, oldh);
-		scene.setViewSize(w, h);
-		if (Application.DEBUG)
-			Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d,oldw=%d,oldh=%d",w,h,oldw,oldh));
-	}
-
-	@Override
-	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
-		
-		// tell the scene to update it's viewport bitmap
-		scene.update();
-		
-		// draw it
-		scene.draw(canvas);
-//    	if (DEBUG){
-//    		long now = System.currentTimeMillis();
-//			double n = ((double)now)/1000L;
-//			double s = ((double)startTime)/1000L;
-//			double fps = 1L/(n-s);
-//			Log.d(TAG,String.format("msec=%d FPS=%.2f",now-startTime,fps));
-//			startTime = System.currentTimeMillis();
-//    	}
-	}
     @Override
     public boolean onTouchEvent(MotionEvent me) {
     	boolean consumed = gestureDectector.onTouchEvent(me);
@@ -86,7 +63,8 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		gestureDectector = new GestureDetector(this);
 		getHolder().addCallback(this);
 		try {
-			scene.setFile(context, "world.jpg");
+			InputStream is = context.getAssets().open("world.jpg");
+			scene.setInputStream(is);
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage());
 		}
@@ -95,7 +73,8 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
     //[start] SurfaceHolder.Callback overrides
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		onSizeChanged(width, height, 0, 0);
+		scene.setViewSize(width, height);
+		Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d)",width,height));
 	}
 
 	@Override
@@ -180,7 +159,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		        try {
 		            c = surfaceHolder.lockCanvas(null);
 		            synchronized (surfaceHolder) {
-	            		onDraw(c);
+		        		scene.draw(c);// draw it
 		            }
 		        } finally {
 		            if (c != null) {
