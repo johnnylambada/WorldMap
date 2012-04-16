@@ -157,6 +157,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	    }
 	}
 	//[end]
+	//[start] class DrawThread
 	class DrawThread extends Thread {
 	    private SurfaceHolder surfaceHolder;
 
@@ -189,6 +190,8 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		    }		
 		}
 	}
+	//[end]
+	//[start] class Touch
 	class Touch {
 		/** Are we the middle of a touch event? */
 		boolean inTouch = false;
@@ -238,4 +241,5 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 			return true;
 		}
 	}
+	//[end]
 }

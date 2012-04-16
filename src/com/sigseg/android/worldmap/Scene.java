@@ -48,6 +48,76 @@ class Scene {
 	private final Viewport viewport;
 	private final Cache cache;
 
+	//[start] constructor
+	/**
+	 * Create a new BigBitmap. Inexpensive operation.
+	 */
+	public Scene() {
+		cache = new Cache();
+		viewport = new Viewport();
+	}
+	//[end]
+	//[start] public
+	/**
+	 * Set the Scene to the named asset
+	 * @param context
+	 * @param assetName
+	 * @throws IOException
+	 */
+	public void setFile(Context context, String assetName) throws IOException {
+
+		Point p = cache.setFile(context, assetName);
+		width = p.x;
+		height = p.y;
+
+		if (DEBUG)
+			Log.d(TAG, String.format("setFile() decoded width=%d height=%d",
+					width, height));
+	}
+
+	/**
+	 * Update the scene to reflect any changes
+	 */
+	public void update(){
+		viewport.update();
+	}
+	
+	/**
+	 * Get the origin
+	 * @return the Point of the origin
+	 */
+	public Point getOrigin(){
+		Point p = new Point();
+		synchronized(viewport){
+			p.set(viewport.origin.left, viewport.origin.top);
+		}
+		return p;
+	}
+	
+	public void start(){
+		cache.start();
+	}
+	
+	public void stop(){
+		cache.stop();
+	}
+	
+	/** Set the Origin */
+	public void setOrigin(int x, int y){
+		viewport.setOrigin(x, y);
+	}
+	
+	/** Set the size of the view within the scene */
+	public void setViewSize(int width, int height){
+		viewport.setSize(width, height);
+	}
+	
+	/** Draw the scene to the canvas. This op fills the canvas */
+	public void draw(Canvas c){
+		viewport.draw(c);
+	}
+	//[end]
+	//[start] class Viewport
 	class Viewport {
 		/** Is the viewport ready to be used? */
 		boolean ready = false;
@@ -107,80 +177,8 @@ class Scene {
 			}
 		}
 	}
-	
-	/**
-	 * The CahceThread's job is to wait until the cahce.state is START_UPDATE and then
-	 * update the cache given the current viewport origin. It does not want to hold
-	 * the cache lock during the call to cache.decoder.decodeRegion because the call
-	 * can take over 1 second. If we hold the lock, the user experience is very
-	 * jumpy.
-	 */
-	class CacheThread extends Thread {
-		final Cache cache;
-	    private boolean running = false;
-	    public void setRunning(boolean value){ 
-	    	running = value; 
-	    }
-	    
-		CacheThread(Cache cache){
-			this.cache = cache;
-		}
-		@Override
-		public void run() {
-			running=true;
-			Rect viewportRect = new Rect(0,0,0,0);
-			while(running){
-				while(cache.state!=CacheState.START_UPDATE)
-					try {
-						Thread.sleep(5);
-						if (!running)
-							return;
-					} catch (InterruptedException e) {}
-	    		long start = System.currentTimeMillis();
-				boolean cont = false;
-				synchronized (cache) {
-					if (cache.state==CacheState.START_UPDATE){
-						cache.state = CacheState.IN_UPDATE;
-						cache.bitmapRef = null;
-						cont = true;
-					}
-				}
-				if (cont){
-					synchronized(viewport){
-						viewportRect.set(viewport.origin);
-					}
-					cache.setOriginRect(viewportRect);
-					try{
-						Bitmap bitmap = cache.decoder.decodeRegion( cache.origin, cache.options );
-						cache.bitmapRef = new NotWeakReference<Bitmap>(bitmap);
-						cache.state = CacheState.READY;
-			    		long done = System.currentTimeMillis();
-			    		if (DEBUG) Log.d(TAG,String.format("decoderegion in %dms",done-start)); 
-					} catch (OutOfMemoryError e){
-						if (cache.percent>0)
-							cache.percent -= 1;
-						cache.state = CacheState.START_UPDATE;
-						Log.e(TAG,String.format("caught oom -- cache now at %d percent.",cache.percent));
-					}
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Substitute for WeakReference<T> that is not weak.
-	 * @param <T>
-	 */
-	class NotWeakReference<T> {
-		T referent;
-		public NotWeakReference(T referent) {
-			this.referent = referent;
-		}
-		public T get(){
-			return referent;
-		}
-	}
-	
+	//[end]
+	//[start] class Cache
 	/**
 	 * Keep track of the cached bitmap
 	 */
@@ -395,71 +393,80 @@ class Scene {
 			if (DEBUG) Log.d(TAG,"new cache.originRect = "+origin.toShortString()); 
 		}
 	}
-
+	//[end]
+	//[start] class CacheThread
 	/**
-	 * Create a new BigBitmap. Inexpensive operation.
+	 * The CahceThread's job is to wait until the cahce.state is START_UPDATE and then
+	 * update the cache given the current viewport origin. It does not want to hold
+	 * the cache lock during the call to cache.decoder.decodeRegion because the call
+	 * can take over 1 second. If we hold the lock, the user experience is very
+	 * jumpy.
 	 */
-	public Scene() {
-		cache = new Cache();
-		viewport = new Viewport();
-	}
-
-	/**
-	 * Set the Scene to the named asset
-	 * @param context
-	 * @param assetName
-	 * @throws IOException
-	 */
-	public void setFile(Context context, String assetName) throws IOException {
-
-		Point p = cache.setFile(context, assetName);
-		width = p.x;
-		height = p.y;
-
-		if (DEBUG)
-			Log.d(TAG, String.format("setFile() decoded width=%d height=%d",
-					width, height));
-	}
-
-	/**
-	 * Update the scene to reflect any changes
-	 */
-	public void update(){
-		viewport.update();
-	}
-	
-	/**
-	 * Get the origin
-	 * @return the Point of the origin
-	 */
-	public Point getOrigin(){
-		Point p = new Point();
-		synchronized(viewport){
-			p.set(viewport.origin.left, viewport.origin.top);
+	class CacheThread extends Thread {
+		final Cache cache;
+	    private boolean running = false;
+	    public void setRunning(boolean value){ 
+	    	running = value; 
+	    }
+	    
+		CacheThread(Cache cache){
+			this.cache = cache;
 		}
-		return p;
+		@Override
+		public void run() {
+			running=true;
+			Rect viewportRect = new Rect(0,0,0,0);
+			while(running){
+				while(cache.state!=CacheState.START_UPDATE)
+					try {
+						Thread.sleep(5);
+						if (!running)
+							return;
+					} catch (InterruptedException e) {}
+	    		long start = System.currentTimeMillis();
+				boolean cont = false;
+				synchronized (cache) {
+					if (cache.state==CacheState.START_UPDATE){
+						cache.state = CacheState.IN_UPDATE;
+						cache.bitmapRef = null;
+						cont = true;
+					}
+				}
+				if (cont){
+					synchronized(viewport){
+						viewportRect.set(viewport.origin);
+					}
+					cache.setOriginRect(viewportRect);
+					try{
+						Bitmap bitmap = cache.decoder.decodeRegion( cache.origin, cache.options );
+						cache.bitmapRef = new NotWeakReference<Bitmap>(bitmap);
+						cache.state = CacheState.READY;
+			    		long done = System.currentTimeMillis();
+			    		if (DEBUG) Log.d(TAG,String.format("decoderegion in %dms",done-start)); 
+					} catch (OutOfMemoryError e){
+						if (cache.percent>0)
+							cache.percent -= 1;
+						cache.state = CacheState.START_UPDATE;
+						Log.e(TAG,String.format("caught oom -- cache now at %d percent.",cache.percent));
+					}
+				}
+			}
+		}
 	}
-	
-	public void start(){
-		cache.start();
+	//[end]
+	//[start] class NotWeakReference
+	/**
+	 * Substitute for WeakReference<T> that is not weak.
+	 * @param <T>
+	 */
+	class NotWeakReference<T> {
+		T referent;
+		public NotWeakReference(T referent) {
+			this.referent = referent;
+		}
+		public T get(){
+			return referent;
+		}
 	}
-	
-	public void stop(){
-		cache.stop();
-	}
-	
-	/** Set the Origin */
-	public void setOrigin(int x, int y){
-		viewport.setOrigin(x, y);
-	}
-	
-	/** Set the size of the view within the scene */
-	public void setViewSize(int width, int height){
-		viewport.setSize(width, height);
-	}
-	
-	/** Draw the scene to the canvas. This op fills the canvas */
-	public void draw(Canvas c){
-		viewport.draw(c);
-	}
+	//[end]
 }
