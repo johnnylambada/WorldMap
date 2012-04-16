@@ -25,67 +25,6 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	
 	private DrawThread drawThread;
 	
-	//[start] SurfaceHolder.Callback constructors
-	public WorldView(Context context) {
-		super(context);
-		init(context);
-	}
-	
-	public WorldView(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
-		init(context);
-	}
-
-	public WorldView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		init(context);
-	}
-	
-	private void init(Context context){
-		gestureDectector = new GestureDetector(this);
-		getHolder().addCallback(this);
-		try {
-			scene.setFile(context, "world.jpg");
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		}
-	}
-	//[end]
-	//[start] OnGestureListener
-	@Override
-	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-		return touch.fling( e1, e2, velocityX, velocityY);
-	}
-	//[start] the rest are defaults
-	@Override
-	public boolean onDown(MotionEvent e) {
-//		Log.d(TAG,"onDown");
-		return false;
-	}
-
-	@Override
-	public void onLongPress(MotionEvent e) {
-//		Log.d(TAG,"onLongPress");
-	}
-
-	@Override
-	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-//		Log.d(TAG,"onScroll");
-		return false;
-	}
-
-	@Override
-	public void onShowPress(MotionEvent e) {
-//		Log.d(TAG,"onShowPress");
-	}
-
-	@Override
-	public boolean onSingleTapUp(MotionEvent e) {
-//		Log.d(TAG,"onSingleTapUp");
-		return false;
-	}
-	// [end]
-	//[end]
 	//[start] View overrides
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -127,6 +66,32 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
         return super.onTouchEvent(me);
     }
 	//[end]
+	//[start] SurfaceHolder.Callback constructors
+	public WorldView(Context context) {
+		super(context);
+		init(context);
+	}
+	
+	public WorldView(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+		init(context);
+	}
+
+	public WorldView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		init(context);
+	}
+	
+	private void init(Context context){
+		gestureDectector = new GestureDetector(this);
+		getHolder().addCallback(this);
+		try {
+			scene.setFile(context, "world.jpg");
+		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
+		}
+	}
+	//[end]
     //[start] SurfaceHolder.Callback overrides
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -156,6 +121,41 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	        }
 	    }
 	}
+	//[end]
+	//[start] OnGestureListener
+	@Override
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+		return touch.fling( e1, e2, velocityX, velocityY);
+	}
+	//[start] the rest are defaults
+	@Override
+	public boolean onDown(MotionEvent e) {
+//		Log.d(TAG,"onDown");
+		return false;
+	}
+
+	@Override
+	public void onLongPress(MotionEvent e) {
+//		Log.d(TAG,"onLongPress");
+	}
+
+	@Override
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+//		Log.d(TAG,"onScroll");
+		return false;
+	}
+
+	@Override
+	public void onShowPress(MotionEvent e) {
+//		Log.d(TAG,"onShowPress");
+	}
+
+	@Override
+	public boolean onSingleTapUp(MotionEvent e) {
+//		Log.d(TAG,"onSingleTapUp");
+		return false;
+	}
+	// [end]
 	//[end]
 	//[start] class DrawThread
 	class DrawThread extends Thread {
