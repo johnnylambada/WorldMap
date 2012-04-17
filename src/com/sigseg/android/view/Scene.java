@@ -94,7 +94,8 @@ public abstract class Scene {
 			if (suspend)
 				cache.state = CacheState.SUSPEND;
 			else
-				cache.state = CacheState.INITIALIZED;
+				if (cache.state==CacheState.SUSPEND)
+					cache.state = CacheState.INITIALIZED;
 		}
 	}
 	

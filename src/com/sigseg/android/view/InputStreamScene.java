@@ -17,7 +17,7 @@ public class InputStreamScene extends Scene {
 	private BitmapRegionDecoder decoder;
 	private Bitmap sampleBitmap;
 	/** What is the downsample size for the sample image? */
-	private final int downShift = 3;
+	private final int downShift = 2;
 	
 	public InputStreamScene(){
 		options.inPreferredConfig = Bitmap.Config.RGB_565;
