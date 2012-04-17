@@ -25,7 +25,7 @@ public class InputStreamScene extends Scene {
 	 */
 	int percent = 5; // Above 25 and we get OOMs
 	/** How many bytes does one pixel use? */
-	final int BYTES_PER_PIXEL = 2;
+	final int BYTES_PER_PIXEL = 4;
 
 	public InputStreamScene(){
 		options.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -80,6 +80,12 @@ public class InputStreamScene extends Scene {
 			null
 			);
 	}
+
+//	@Override
+//	protected Rect calculateCacheWindow(Rect viewportRect) {
+//		// Simplest implementation
+//		return viewportRect;
+//	}
 
 	private Rect calculatedCacheWindowRect = new Rect();
 	@Override
