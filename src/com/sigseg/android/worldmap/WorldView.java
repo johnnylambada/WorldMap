@@ -75,7 +75,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
     //[start] SurfaceHolder.Callback overrides
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		scene.setViewSize(width, height);
+		scene.setViewportSize(width, height);
 		Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d)",width,height));
 	}
 
@@ -215,11 +215,11 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		
 		Point fling_viewOrigin = new Point();
 		Point fling_viewSize = new Point();
+		Point fling_sceneSize = new Point();
 		boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
-			scene.getOrigin(fling_viewOrigin);
-			scene.getViewSize(fling_viewSize);
-			int w = scene.getWidth();
-			int h = scene.getHeight();
+			scene.getViewportOrigin(fling_viewOrigin);
+			scene.getViewportSize(fling_viewSize);
+			scene.getSceneSize(fling_sceneSize);
 
 			synchronized(this){
 				state = TouchState.START_FLING;
@@ -230,9 +230,9 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 					(int)-velocityX,
 					(int)-velocityY,
 					0, 
-					w-fling_viewSize.x, 
+					fling_sceneSize.x-fling_viewSize.x, 
 					0,
-					h-fling_viewSize.y);
+					fling_sceneSize.y-fling_viewSize.y);
 				touchThread.interrupt();
 			}
 //			Log.d(TAG,String.format("scroller.fling(%d,%d,%d,%d,%d,%d,%d,%d)",
@@ -241,9 +241,9 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 //					(int)-velocityX,
 //					(int)-velocityY,
 //					0, 
-//					w-fling_viewSize.x, 
+//					fling_sceneSize.x-fling_viewSize.x,
 //					0,
-//					h-fling_viewSize.y));
+//					fling_sceneSize.y-fling_viewSize.y));
 			return true;
 		}
 		boolean down(MotionEvent event){
@@ -252,7 +252,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 				state = TouchState.IN_TOUCH;
 	        	viewDown.x = (int) event.getX();
 	        	viewDown.y = (int) event.getY();
-	        	Point p = scene.getOrigin();
+	        	Point p = scene.getViewportOrigin();
 	        	viewportOriginAtDown.set(p.x,p.y);
         	}
         	return true;
@@ -265,7 +265,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	        	int newX = (int) (viewportOriginAtDown.x - deltaX);
 	        	int newY = (int) (viewportOriginAtDown.y - deltaY);
 	        	
-	        	scene.setOrigin(newX, newY);
+	        	scene.setViewportOrigin(newX, newY);
 	        	invalidate();
 			}
 			return true;
@@ -309,7 +309,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 					}
 					if (touch.state==TouchState.IN_FLING){
 						scroller.computeScrollOffset();
-						scene.setOrigin(scroller.getCurrX(), scroller.getCurrY());
+						scene.setViewportOrigin(scroller.getCurrX(), scroller.getCurrY());
 						if (scroller.isFinished()){
 							scene.setSuspend(false);
 							synchronized (touch) {

@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
-import android.graphics.Point;
 import android.graphics.Rect;
 
 public class InputStreamScene extends Scene {
@@ -38,8 +37,7 @@ public class InputStreamScene extends Scene {
 		// Grab the bounds for the scene dimensions
 		tmpOptions.inJustDecodeBounds = true;
 		BitmapFactory.decodeStream(inputStream, null, tmpOptions);
-		width = tmpOptions.outWidth;
-		height = tmpOptions.outHeight;
+		setSceneSize(tmpOptions.outWidth, tmpOptions.outHeight);
 		
 		// Create the sample image
 		tmpOptions.inJustDecodeBounds = false;
@@ -58,10 +56,10 @@ public class InputStreamScene extends Scene {
 
 
 	@Override
-	protected void drawSampleIntoBitmapAtPoint(Bitmap bitmap, Point point) {
+	protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {
 		Canvas c = new Canvas(bitmap);
-		int left   = (point.x>>downShift);
-		int top    = (point.y>>downShift);
+		int left   = (rectOfSample.left>>downShift);
+		int top    = (rectOfSample.top>>downShift);
 		int right  = left + (c.getWidth()>>downShift);
 		int bottom = top + (c.getHeight()>>downShift);
 		Rect srcRect = new Rect( left, top, right, bottom );
@@ -72,6 +70,5 @@ public class InputStreamScene extends Scene {
 			identity,
 			null
 			);
-
 	}
 }
