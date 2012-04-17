@@ -197,7 +197,7 @@ public abstract class Scene {
 		 * User experience seems to be best for smaller values. 
 		 */
 		int percent = 5; // Above 25 and we get OOMs
-		/** A Rect that defines where the Cache is within the scene 1=1/2, 2=1/4 3=1/8, etc */
+		/** A Rect that defines where the Cache is within the scene */
 		final Rect origin = new Rect(0,0,0,0);
 		/** Used to calculate the Rect within the cache to copy from for the Viewport */
 		final Rect srcRect = new Rect(0,0,0,0);

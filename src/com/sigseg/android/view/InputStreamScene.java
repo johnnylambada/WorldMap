@@ -16,7 +16,7 @@ public class InputStreamScene extends Scene {
 	private final BitmapFactory.Options options = new BitmapFactory.Options();
 	private BitmapRegionDecoder decoder;
 	private Bitmap sampleBitmap;
-	/** What is the downsample size for the sample image? */
+	/** What is the downsample size for the sample image?  1=1/2, 2=1/4 3=1/8, etc */
 	private final int downShift = 2;
 	
 	public InputStreamScene(){
