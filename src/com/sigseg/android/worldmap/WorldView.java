@@ -22,8 +22,6 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 
 //	private long startTime=0;
 	private final InputStreamScene scene = new InputStreamScene();
-	
-	
 	private final Touch touch;
 	private GestureDetector gestureDectector;
 	
@@ -215,14 +213,6 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 			touchThread = null;
 		}
 		
-//		final int FLING_TIME = 2000;	// Amount of time a fling runs for
-//		float fling_dx;
-//		float fling_dy;
-//		float fling_velocityX;
-//		float fling_velocityY;
-//		int fling_time;
-//		long fling_startTime;
-
 		Point fling_viewOrigin = new Point();
 		Point fling_viewSize = new Point();
 		boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
@@ -243,22 +233,16 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 					0,
 					h-fling_viewSize.y);
 				touchThread.interrupt();
-//				fling_dx = e2.getX() - e1.getX();
-//				fling_dy = e2.getY() - e1.getY();
-//				fling_velocityX = velocityX;
-//				fling_velocityY = velocityY;
-//				fling_time = FLING_TIME;
-//				fling_startTime = System.currentTimeMillis();
 			}
-			Log.d(TAG,String.format("scroller.fling(%d,%d,%d,%d,%d,%d,%d,%d)",
-					fling_viewOrigin.x,
-					fling_viewOrigin.y,
-					(int)-velocityX,
-					(int)-velocityY,
-					0, 
-					w-fling_viewSize.x, 
-					0,
-					h-fling_viewSize.y));
+//			Log.d(TAG,String.format("scroller.fling(%d,%d,%d,%d,%d,%d,%d,%d)",
+//					fling_viewOrigin.x,
+//					fling_viewOrigin.y,
+//					(int)-velocityX,
+//					(int)-velocityY,
+//					0, 
+//					w-fling_viewSize.x, 
+//					0,
+//					h-fling_viewSize.y));
 			return true;
 		}
 		boolean down(MotionEvent event){
