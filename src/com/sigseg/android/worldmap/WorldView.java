@@ -223,6 +223,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 
 			synchronized(this){
 				state = TouchState.START_FLING;
+				scene.setSuspend(true);
 				scroller.fling(
 					fling_viewOrigin.x,
 					fling_viewOrigin.y,
@@ -246,6 +247,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 			return true;
 		}
 		boolean down(MotionEvent event){
+			scene.setSuspend(false);	// If we were suspended because of a fling
         	synchronized(this){
 				state = TouchState.IN_TOUCH;
 	        	viewDown.x = (int) event.getX();
@@ -309,6 +311,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 						scroller.computeScrollOffset();
 						scene.setOrigin(scroller.getCurrX(), scroller.getCurrY());
 						if (scroller.isFinished()){
+							scene.setSuspend(false);
 							synchronized (touch) {
 								touch.state = TouchState.UNTOUCHED;
 								try{

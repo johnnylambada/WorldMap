@@ -36,7 +36,7 @@ public abstract class Scene {
 	private final String TAG = "Scene";
 	private final boolean DEBUG = true;
 	
-	private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY};
+	private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY,SUSPEND};
 
 	protected int width, height;
 
@@ -86,6 +86,15 @@ public abstract class Scene {
 	public void initialize(){
 		synchronized(cache){
 			cache.state = CacheState.INITIALIZED;
+		}
+	}
+	
+	public void setSuspend(boolean suspend){
+		synchronized(cache){
+			if (suspend)
+				cache.state = CacheState.SUSPEND;
+			else
+				cache.state = CacheState.INITIALIZED;
 		}
 	}
 	
@@ -399,14 +408,24 @@ public abstract class Scene {
 					cache.setOriginRect(viewportRect);
 					try{
 						Bitmap bitmap = fillCache(cache.origin);
-						cache.bitmapRef = bitmap;
-						cache.state = CacheState.READY;
+						synchronized (cache){
+							if (cache.state==CacheState.IN_UPDATE){
+								cache.bitmapRef = bitmap;
+								cache.state = CacheState.READY;
+							} else {
+								Log.w(TAG,"fillCache aborted");
+							}
+						}
 			    		long done = System.currentTimeMillis();
-			    		if (DEBUG) Log.d(TAG,String.format("decoderegion in %dms",done-start)); 
+			    		if (DEBUG) Log.d(TAG,String.format("fillCache in %dms",done-start)); 
 					} catch (OutOfMemoryError e){
 						if (cache.percent>0)
 							cache.percent -= 1;
-						cache.state = CacheState.START_UPDATE;
+						synchronized (cache){
+							if (cache.state==CacheState.IN_UPDATE){
+									cache.state = CacheState.START_UPDATE;
+							}
+						}
 						Log.e(TAG,String.format("caught oom -- cache now at %d percent.",cache.percent));
 					}
 				}
