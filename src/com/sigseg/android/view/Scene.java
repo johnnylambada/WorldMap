@@ -66,6 +66,15 @@ public abstract class Scene {
 		return p;
 	}
 	
+	public int getHeight(){return height;}
+	public int getWidth(){return width;}
+	
+	public void getOrigin(Point p){
+		synchronized(viewport){
+			p.set(viewport.origin.left, viewport.origin.top);
+		}
+	}
+	
 	public void start(){
 		cache.start();
 	}
@@ -88,6 +97,11 @@ public abstract class Scene {
 	/** Set the size of the view within the scene */
 	public void setViewSize(int width, int height){
 		viewport.setSize(width, height);
+	}
+	
+	/** Return a Point with the x value set to the viewport width, y set to height */
+	public void getViewSize(Point p){
+		viewport.getSize(p);
 	}
 	
 	/** Draw the scene to the canvas. This op fills the canvas */
@@ -148,6 +162,12 @@ public abstract class Scene {
 			}
 		}
 		
+		void getSize(Point p){
+			synchronized (this) {
+				p.x = identity.right;
+				p.y = identity.bottom;
+			}
+		}
 		void draw(Canvas c){
 			cache.update(this);
 			synchronized (this){
@@ -360,9 +380,9 @@ public abstract class Scene {
 				while(cache.state!=CacheState.START_UPDATE)
 					try {
 						Thread.sleep(Integer.MAX_VALUE);
-						if (!running)
-							return;
 					} catch (InterruptedException e) {}
+				if (!running)
+					return;
 	    		long start = System.currentTimeMillis();
 				boolean cont = false;
 				synchronized (cache) {

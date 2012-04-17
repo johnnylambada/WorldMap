@@ -13,6 +13,7 @@ import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Scroller;
 
 import com.sigseg.android.view.InputStreamScene;
 
@@ -23,7 +24,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	private final InputStreamScene scene = new InputStreamScene();
 	
 	
-	private final Touch touch = new Touch();
+	private final Touch touch;
 	private GestureDetector gestureDectector;
 	
 	private DrawThread drawThread;
@@ -46,16 +47,19 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	//[start] SurfaceHolder.Callback constructors
 	public WorldView(Context context) {
 		super(context);
+		touch = new Touch(context);
 		init(context);
 	}
 	
 	public WorldView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		touch = new Touch(context);
 		init(context);
 	}
 
 	public WorldView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		touch = new Touch(context);
 		init(context);
 	}
 	
@@ -84,10 +88,12 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		drawThread.setRunning(true);
 		drawThread.start();
 		scene.start();
+		touch.start();
 	}
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
+		touch.stop();
 	    scene.stop();
 	    drawThread.setRunning(false);
 	    boolean retry = true;
@@ -171,30 +177,103 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	}
 	//[end]
 	//[start] class Touch
+	enum TouchState {UNTOUCHED,IN_TOUCH,START_FLING,IN_FLING};
 	class Touch {
-		/** Are we the middle of a touch event? */
-		boolean inTouch = false;
+		TouchState state = TouchState.UNTOUCHED;
 		/** Where on the view did we initially touch */
 		final Point viewDown = new Point(0,0);
 		/** What was the coordinates of the viewport origin? */
-		final Point viewportOriginAtDown = new Point(0,0); 
+		final Point viewportOriginAtDown = new Point(0,0);
 		
+		final Scroller scroller;
+		
+		TouchThread touchThread;
+		
+		Touch(Context context){
+			scroller = new Scroller(context);
+		}
+		
+		void start(){
+			touchThread = new TouchThread(this);
+			touchThread.setName("touchThread");
+			touchThread.start();
+		}
+		
+		void stop(){
+			touchThread.running = false;
+			touchThread.interrupt();
+
+		    boolean retry = true;
+		    while (retry) {
+		        try {
+		            touchThread.join();
+		            retry = false;
+		        } catch (InterruptedException e) {
+		            // we will try it again and again...
+		        }
+		    }
+			touchThread = null;
+		}
+		
+//		final int FLING_TIME = 2000;	// Amount of time a fling runs for
+//		float fling_dx;
+//		float fling_dy;
+//		float fling_velocityX;
+//		float fling_velocityY;
+//		int fling_time;
+//		long fling_startTime;
+
+		Point fling_viewOrigin = new Point();
+		Point fling_viewSize = new Point();
 		boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
-			inTouch = false;
-			Log.d(TAG,"fling!");
+			scene.getOrigin(fling_viewOrigin);
+			scene.getViewSize(fling_viewSize);
+			int w = scene.getWidth();
+			int h = scene.getHeight();
+
+			synchronized(this){
+				state = TouchState.START_FLING;
+				scroller.fling(
+					fling_viewOrigin.x,
+					fling_viewOrigin.y,
+					(int)-velocityX,
+					(int)-velocityY,
+					0, 
+					w-fling_viewSize.x, 
+					0,
+					h-fling_viewSize.y);
+				touchThread.interrupt();
+//				fling_dx = e2.getX() - e1.getX();
+//				fling_dy = e2.getY() - e1.getY();
+//				fling_velocityX = velocityX;
+//				fling_velocityY = velocityY;
+//				fling_time = FLING_TIME;
+//				fling_startTime = System.currentTimeMillis();
+			}
+			Log.d(TAG,String.format("scroller.fling(%d,%d,%d,%d,%d,%d,%d,%d)",
+					fling_viewOrigin.x,
+					fling_viewOrigin.y,
+					(int)-velocityX,
+					(int)-velocityY,
+					0, 
+					w-fling_viewSize.x, 
+					0,
+					h-fling_viewSize.y));
 			return true;
 		}
 		boolean down(MotionEvent event){
-        	inTouch = true;
-        	viewDown.x = (int) event.getX();
-        	viewDown.y = (int) event.getY();
-        	Point p = scene.getOrigin();
-        	viewportOriginAtDown.set(p.x,p.y);
+        	synchronized(this){
+				state = TouchState.IN_TOUCH;
+	        	viewDown.x = (int) event.getX();
+	        	viewDown.y = (int) event.getY();
+	        	Point p = scene.getOrigin();
+	        	viewportOriginAtDown.set(p.x,p.y);
+        	}
         	return true;
 		}
 		
 		boolean move(MotionEvent event){
-			if (inTouch){
+			if (state==TouchState.IN_TOUCH){
 	        	int deltaX = (int) (event.getX()-viewDown.x);
 	        	int deltaY = (int) (event.getY()-viewDown.y);
 	        	int newX = (int) (viewportOriginAtDown.x - deltaX);
@@ -207,17 +286,55 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		}
 		
 		boolean up(MotionEvent event){
-			if (inTouch){
-				inTouch = false;
+			if (state==TouchState.IN_TOUCH){
+				state = TouchState.UNTOUCHED;
 			}
 			return true;
 		}
 		
 		boolean cancel(MotionEvent event){
-			if (inTouch){
-				inTouch = false;
+			if (state==TouchState.IN_TOUCH){
+				state = TouchState.UNTOUCHED;
 			}
 			return true;
+		}
+		
+		class TouchThread extends Thread {
+		    final Touch touch;
+			boolean running = false;
+		    void setRunning(boolean value){ running = value; }
+		    
+			TouchThread(Touch touch){ this.touch = touch; }
+			@Override
+			public void run() {
+				running=true;
+				while(running){
+					while(touch.state!=TouchState.START_FLING && touch.state!=TouchState.IN_FLING){
+						try {
+							Thread.sleep(Integer.MAX_VALUE);
+						} catch (InterruptedException e) {}
+						if (!running)
+							return;
+					}
+					synchronized (touch) {
+						if (touch.state==TouchState.START_FLING){
+							touch.state = TouchState.IN_FLING;
+						}
+					}
+					if (touch.state==TouchState.IN_FLING){
+						scroller.computeScrollOffset();
+						scene.setOrigin(scroller.getCurrX(), scroller.getCurrY());
+						if (scroller.isFinished()){
+							synchronized (touch) {
+								touch.state = TouchState.UNTOUCHED;
+								try{
+									Thread.sleep(5);
+								} catch (InterruptedException e) {}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	//[end]
