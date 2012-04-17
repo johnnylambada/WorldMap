@@ -153,7 +153,25 @@ public abstract class Scene {
 	 * @return the Bitmap representing the requested area of the larger bitmap
 	 */
 	protected abstract Bitmap fillCache(Rect rectOfCache);
-//	protected abstract Rect calculateCacheWindow(Rect viewportRect);
+	/**
+	 * The memory allocation you just did in fillCache caused an OutOfMemoryError.
+	 * You can attempt to recover. Experience shows that when we get an 
+	 * OutOfMemoryError, we're pretty hosed and are going down. For instance, if
+	 * we're trying to decode a bitmap region with 
+	 * {@link android.graphics.BitmapRegionDecoder} and we run out of memory, 
+	 * we're going to die somewhere in the C code with a SIGSEGV. 
+	 * @param error The OutOfMemoryError exception data
+	 */
+	protected abstract void fillCacheOutOfMemoryError( OutOfMemoryError error );
+	/**
+	 * Calculate the Rect of the cache's window based on the current viewportRect.
+	 * The returned Rect must at least contain the viewportRect, but it can be
+	 * larger if the system believes a bitmap of the returned size will fit into
+	 * memory. This function must be fast as it happens while the cache lock is held.
+	 * @param viewportRect The returned must be able to contain this Rect
+	 * @return The Rect that will be used to fill the cache
+	 */
+	protected abstract Rect calculateCacheWindow(Rect viewportRect);
 	/**
 	 * This method fills the passed-in bitmap with sample data. This function must 
 	 * return as fast as possible so it shouldn't have to do any IO at all -- the
@@ -231,13 +249,6 @@ public abstract class Scene {
 	 * Keep track of the cached bitmap
 	 */
 	private class Cache {
-		/** What percent of total memory should we use for the cache? The bigger the cache,
-		 * the longer it takes to read -- 1.2 secs for 25%, 600ms for 10%, 500ms for 5%.
-		 * User experience seems to be best for smaller values. 
-		 */
-		int percent = 5; // Above 25 and we get OOMs
-		/** How many bytes does one pixel use? */
-		final int BYTES_PER_PIXEL = 2;
 		/** A Rect that defines where the Cache is within the scene */
 		final Rect window = new Rect(0,0,0,0);
 		/** The bitmap of the current cache */
@@ -347,60 +358,6 @@ public abstract class Scene {
 				}
 			}
 		}
-		
-		/** Figure out the originRect based on the viewportRect */
-		void setOriginRect(Rect viewportRect ){
-			long bytesToUse = Runtime.getRuntime().maxMemory() * percent / 100;
-
-			int vw = viewportRect.width();
-			int vh = viewportRect.height();
-			
-			// Calculate the max size of the margins to fit in our memory budget
-			int tw=0;
-			int th=0;
-			int mw = tw;
-			int mh = th;
-			while((vw+tw) * (vh+th) * BYTES_PER_PIXEL < bytesToUse){
-				mw = tw++;
-				mh = th++;
-			}
-			
-			// Trim the margins if they're too big.
-			if (vw+mw > size.x) // viewport width + margin width > width of the image
-				mw = Math.max(0, size.x-vw);
-			if (vh+mh > size.y) // viewport height + margin height > height of the image
-				mh = Math.max(0, size.y-vh);
-			
-			// Figure out the left & right based on the margin. We assume our viewportRect
-			// is <= our size. If that's not the case, then this logic breaks.
-			int left = viewportRect.left - (mw>>1);
-			int right = viewportRect.right + (mw>>1);
-			if (left<0){
-				right = right - left; // Add's the overage on the left side back to the right
-				left = 0;
-			}
-			if (right>size.x){
-				left = left - (right-size.x); // Adds overage on right side back to left
-				right = size.x;
-			}
-
-			// Figure out the top & bottom based on the margin. We assume our viewportRect
-			// is <= our size. If that's not the case, then this logic breaks.
-			int top = viewportRect.top - (mh>>1); 
-			int bottom = viewportRect.bottom + (mh>>1);
-			if (top<0){
-				bottom = bottom - top; // Add's the overage on the top back to the bottom
-				top = 0;
-			}
-			if (bottom>size.y){
-				top = top - (bottom-size.y); // Adds overage on bottom back to top
-				bottom = size.y;
-			}
-			
-			// Set the origin based on our new calculated values.
-			window.set(left, top, right, bottom);
-			if (DEBUG) Log.d(TAG,"new cache.originRect = "+window.toShortString()+" size="+size.toString()); 
-		}
 	}
 	//[end]
 	//[start] class CacheThread
@@ -454,7 +411,8 @@ public abstract class Scene {
 					}
 					synchronized (cache) {
 						if (cache.state==CacheState.IN_UPDATE)
-							cache.setOriginRect(viewportRect);
+							//cache.setWindowRect(viewportRect);
+							cache.window.set(calculateCacheWindow(viewportRect));
 						else
 							cont = false;
 					}
@@ -473,20 +431,15 @@ public abstract class Scene {
 				    		if (DEBUG) Log.d(TAG,String.format("fillCache in %dms",done-start)); 
 						} catch (OutOfMemoryError e){
 							/*
-							 *  This is a feeble attempt to recover. Experience shows that if we
+							 *  Attempt to recover. Experience shows that if we
 							 *  do get an OutOfMemoryError, we're pretty hosed and are going down.
-							 *  For instance, if we're trying to decode a bitmap region with
-							 *  BitmapRegionDecoder and we run out of memory, we're going to die
-							 *  somewhere in the C code with a SIGSEGV. 
 							 */
 							synchronized (cache){
-								if (cache.percent>0)
-									cache.percent -= 1;
+								fillCacheOutOfMemoryError(e);
 								if (cache.state==CacheState.IN_UPDATE){
 									cache.state = CacheState.START_UPDATE;
 								}
 							}
-							Log.e(TAG,String.format("caught oom -- cache now at %d percent.",cache.percent));
 						}
 					}
 				}
