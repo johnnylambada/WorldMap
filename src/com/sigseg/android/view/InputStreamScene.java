@@ -150,4 +150,10 @@ public class InputStreamScene extends Scene {
 			percent -= 1;
 		Log.e(TAG,String.format("caught oom -- cache now at %d percent.",percent));
 	}
+
+	@Override
+	protected void drawComplete(Canvas canvas) {
+		// TODO Auto-generated method stub
+		
+	}
 }

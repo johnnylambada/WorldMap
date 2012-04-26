@@ -59,7 +59,7 @@ public abstract class Scene {
 		point.set(size.x, size.y);
 	}
 	//[end]
-	//[start] [gs]etViewport(Origin|Size)
+	//[start] [gs]etViewport(Origin|Size|Translation)
 	/**
 	 * Get the viewport origin.
 	 * @return the a new Point of the origin
@@ -92,12 +92,22 @@ public abstract class Scene {
 	public void getViewportSize(Point p){
 		viewport.getSize(p);
 	}
+	/** Set the translation for the draw of the bitmap within the viewport */
+	public void setViewportTranslation(int x, int y){
+		viewport.setTranslation(x, y);
+	}
+	/** Return the Point  */
+	public void getViewportTranslation(Point p){
+		viewport.getTranslation(p);
+	}
 	//[end]
-	//[start] initialize/start/stop/suspend the cache
+	//[start] initialize/start/stop/suspend/invalidate the cache
 	/** Initializes the cache */
 	public void initialize(){
-		synchronized(cache){
-			cache.state = CacheState.INITIALIZED;
+		if (cache.getState()==CacheState.UNINITIALIZED){
+			synchronized(cache){
+				cache.setState(CacheState.INITIALIZED);
+			}
 		}
 	}
 	/** Starts the cache thread */
@@ -117,15 +127,19 @@ public abstract class Scene {
 	public void setSuspend(boolean suspend){
 		if (suspend) {
 			synchronized(cache){
-				cache.state = CacheState.SUSPEND;
+				cache.setState(CacheState.SUSPEND);
 			}
 		} else {
-			if (cache.state==CacheState.SUSPEND) {
+			if (cache.getState()==CacheState.SUSPEND) {
 				synchronized(cache){
-					cache.state = CacheState.INITIALIZED;
+					cache.setState(CacheState.INITIALIZED);
 				}
 			}
 		}
+	}
+	/** Invalidate the cache. This causes it to refill */
+	public void invalidate(){
+		cache.invalidate();
 	}
 	//[end]
 	//[start] void draw(Canvas c)
@@ -180,6 +194,11 @@ public abstract class Scene {
 	 * @param rectOfSample Rectangle within the Scene that this bitmap represents.
 	 */
 	protected abstract void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample);
+	/**
+	 * The Cache is done drawing the bitmap -- time to add the finishing touches 
+	 * @param canvas
+	 */
+	protected abstract void drawComplete(Canvas canvas);
 	//[end]
 	//[start] class Viewport
 	private class Viewport {
@@ -189,6 +208,8 @@ public abstract class Scene {
 		final Rect identity = new Rect(0,0,0,0);
 		/** A Rect that defines where the Viewport is within the scene */
 		final Rect window = new Rect(0,0,0,0);
+		/** The translation to apply before drawing the bitmap */
+		Point translation = null;
 
 		void setOrigin(int x, int y){
 			synchronized(this){
@@ -227,18 +248,36 @@ public abstract class Scene {
 						window.top + h);
 			}
 		}
-		
 		void getSize(Point p){
 			synchronized (this) {
 				p.x = identity.right;
 				p.y = identity.bottom;
 			}
 		}
+		void setTranslation(int x, int y){
+			synchronized (this) {
+				if (x==0 && y==0)
+					translation = null;
+				else
+					translation = new Point(x,y);
+			}
+		}
+		void getTranslation(Point p){
+			synchronized (this) {
+				p.set(translation.x,translation.y);
+			}
+		}
 		void draw(Canvas c){
 			cache.update(this);
 			synchronized (this){
-				if (bitmap!=null)
+				if (bitmap!=null){
+					if (translation!=null)
+						c.translate(translation.x, translation.y);
 					c.drawBitmap( bitmap, null, identity, null );
+					if (translation!=null)
+						c.translate(-translation.x, -translation.y);
+					drawComplete(c);
+				}
 			}
 		}
 	}
@@ -255,6 +294,11 @@ public abstract class Scene {
 		Bitmap bitmapRef = null;
 		CacheState state = CacheState.UNINITIALIZED;
 
+		void setState(CacheState newState){
+			Log.i(TAG,String.format("cacheState old=%s new=%s",state.toString(),newState.toString()));
+			state = newState;
+		}
+		CacheState getState(){ return state; }
 		
 		/** Our load from disk thread */
 		CacheThread cacheThread;
@@ -282,18 +326,24 @@ public abstract class Scene {
 		    }
 			cacheThread = null;
 		}
+		void invalidate(){
+			synchronized(this){
+				setState(CacheState.INITIALIZED);
+				cacheThread.interrupt();
+			}
+		}
 		
 		/** Fill the bitmap with the part of the scene referenced by the viewport Rect */
 		void update(Viewport viewport){
 			Bitmap bitmap = null;	// If this is null at the bottom, then load from the sample
 			synchronized(this){
-				switch(state){
+				switch(getState()){
 				case UNINITIALIZED:
 					// nothing can be done -- should never get here
 					return;
 				case INITIALIZED:
 					// time to cache some data
-					state = CacheState.START_UPDATE;
+					setState(CacheState.START_UPDATE);
 					cacheThread.interrupt();
 					break;
 				case START_UPDATE:
@@ -310,11 +360,11 @@ public abstract class Scene {
 					if (bitmapRef==null){
 						// Start the cache off right
 						if (DEBUG) Log.d(TAG,"bitmapRef is null");
-						state = CacheState.START_UPDATE;
+						setState(CacheState.START_UPDATE);
 						cacheThread.interrupt();
 					} else if (!window.contains(viewport.window)){
 						if (DEBUG) Log.d(TAG,"viewport not in cache");
-						state = CacheState.START_UPDATE;
+						setState(CacheState.START_UPDATE);
 						cacheThread.interrupt();
 					} else {
 						// Happy case -- the cache already contains the Viewport
@@ -343,13 +393,21 @@ public abstract class Scene {
 							srcRect,
 							viewport.identity,
 							null);
+					
+//					try {
+//						FileOutputStream fos = new FileOutputStream("/sdcard/viewport.png");
+//						viewport.bitmap.compress(Bitmap.CompressFormat.PNG, 99, fos);
+//						Thread.sleep(1000);
+//					} catch  (Exception e){
+//						System.out.print(e.getMessage());
+//					}
 				}
 			}
 		}
 		final Rect srcRect = new Rect(0,0,0,0);
 		
 		void loadSampleIntoViewport(Viewport viewport){
-			if (state!=CacheState.UNINITIALIZED){
+			if (getState()!=CacheState.UNINITIALIZED){
 				synchronized(viewport){
 					drawSampleRectIntoBitmap(
 						viewport.bitmap,
@@ -389,7 +447,7 @@ public abstract class Scene {
 			running=true;
 			Rect viewportRect = new Rect(0,0,0,0);
 			while(running){
-				while(cache.state!=CacheState.START_UPDATE)
+				while(cache.getState()!=CacheState.START_UPDATE)
 					try {
 						// Sleep until we have something to do
 						Thread.sleep(Integer.MAX_VALUE);
@@ -399,8 +457,8 @@ public abstract class Scene {
 	    		long start = System.currentTimeMillis();
 				boolean cont = false;
 				synchronized (cache) {
-					if (cache.state==CacheState.START_UPDATE){
-						cache.state = CacheState.IN_UPDATE;
+					if (cache.getState()==CacheState.START_UPDATE){
+						cache.setState(CacheState.IN_UPDATE);
 						cache.bitmapRef = null;
 						cont = true;
 					}
@@ -410,7 +468,7 @@ public abstract class Scene {
 						viewportRect.set(viewport.window);
 					}
 					synchronized (cache) {
-						if (cache.state==CacheState.IN_UPDATE)
+						if (cache.getState()==CacheState.IN_UPDATE)
 							//cache.setWindowRect(viewportRect);
 							cache.window.set(calculateCacheWindow(viewportRect));
 						else
@@ -420,11 +478,11 @@ public abstract class Scene {
 						try{
 							Bitmap bitmap = fillCache(cache.window);
 							synchronized (cache){
-								if (cache.state==CacheState.IN_UPDATE){
+								if (cache.getState()==CacheState.IN_UPDATE){
 									cache.bitmapRef = bitmap;
-									cache.state = CacheState.READY;
+									cache.setState(CacheState.READY);
 								} else {
-									Log.w(TAG,"fillCache aborted");
+									Log.w(TAG,"fillCache operation aborted");
 								}
 							}
 				    		long done = System.currentTimeMillis();
@@ -436,8 +494,8 @@ public abstract class Scene {
 							 */
 							synchronized (cache){
 								fillCacheOutOfMemoryError(e);
-								if (cache.state==CacheState.IN_UPDATE){
-									cache.state = CacheState.START_UPDATE;
+								if (cache.getState()==CacheState.IN_UPDATE){
+									cache.setState(CacheState.START_UPDATE);
 								}
 							}
 						}
