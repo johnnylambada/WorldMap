@@ -161,9 +161,11 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 				} catch (InterruptedException e) {}
 		        c = null;
 		        try {
-		            c = surfaceHolder.lockCanvas(null);
-		            synchronized (surfaceHolder) {
-		        		scene.draw(c);// draw it
+		            c = surfaceHolder.lockCanvas();
+		            if (c!=null){
+			            synchronized (surfaceHolder) {
+			        		scene.draw(c);// draw it
+			            }
 		            }
 		        } finally {
 		            if (c != null) {

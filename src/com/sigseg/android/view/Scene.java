@@ -447,7 +447,7 @@ public abstract class Scene {
 			running=true;
 			Rect viewportRect = new Rect(0,0,0,0);
 			while(running){
-				while(cache.getState()!=CacheState.START_UPDATE)
+				while(running && cache.getState()!=CacheState.START_UPDATE)
 					try {
 						// Sleep until we have something to do
 						Thread.sleep(Integer.MAX_VALUE);
