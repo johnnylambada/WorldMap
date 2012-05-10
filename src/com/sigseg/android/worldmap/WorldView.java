@@ -27,6 +27,15 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	
 	private DrawThread drawThread;
 	
+	//[start] getters and setters
+	public Point getViewport(){
+		return scene.getViewportOrigin();
+	}
+	
+	public void setViewport(Point viewport){
+		scene.setViewportOrigin(viewport.x, viewport.y);
+	}
+	//[end]
 	//[start] View overrides
     @Override
     public boolean onTouchEvent(MotionEvent me) {

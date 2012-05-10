@@ -4,7 +4,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <com.sigseg.android.worldmap.WorldView
+    <com.sigseg.android.worldmap.WorldView android:id="@+id/worldview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         />
