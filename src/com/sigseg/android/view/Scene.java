@@ -5,7 +5,8 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.util.Log;
+
+import com.apphance.android.Log;
 
 /*
  * +-------------------------------------------------------------------+

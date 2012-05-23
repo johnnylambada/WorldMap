@@ -9,7 +9,8 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.util.Log;
+
+import com.apphance.android.Log;
 
 public class InputStreamScene extends Scene {
 	private static final String TAG="InputStreamScene";

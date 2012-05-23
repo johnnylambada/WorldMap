@@ -7,7 +7,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
@@ -15,6 +14,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Scroller;
 
+import com.apphance.android.Log;
 import com.sigseg.android.view.InputStreamScene;
 
 public class WorldView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{

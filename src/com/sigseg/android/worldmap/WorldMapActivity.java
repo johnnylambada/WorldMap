@@ -4,13 +4,17 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
+
+import com.apphance.android.Apphance;
+import com.apphance.android.Log;
 
 public class WorldMapActivity extends Activity {
 	private static final String TAG = "WorldMapActivity";
 	private static final String KEY_POINT = "POINT";
+	
+	public static final String APPHANCE_KEY = "574846bd9bd4cfa59623e7fbbb1c6d6b3f342a6a";
 	
 	private WorldView worldView;
 	
@@ -18,6 +22,7 @@ public class WorldMapActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG,"onCreate()");
+        Apphance.startNewSession(this, APPHANCE_KEY , Apphance.Mode.Silent);
         // Hide the window title.
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
