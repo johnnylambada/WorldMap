@@ -3,14 +3,14 @@ package com.sigseg.android.worldmap;
 import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 
 public class WorldMapActivity extends Activity {
 	private static final String TAG = "WorldMapActivity";
-	private static final String KEY_POINT = "POINT";
+	private static final String KEY_X = "X";
+	private static final String KEY_Y = "Y";
 	
 	private WorldView worldView;
 	
@@ -24,12 +24,14 @@ public class WorldMapActivity extends Activity {
         setContentView(R.layout.main);
         worldView = (WorldView) findViewById(R.id.worldview);
         if (savedInstanceState!=null) {
-        	if (savedInstanceState.containsKey(KEY_POINT)){
-        		Point p = (Point) savedInstanceState.get(KEY_POINT);
+        	if (savedInstanceState.containsKey(KEY_X) && savedInstanceState.containsKey(KEY_Y)){
+        		int x = (Integer) savedInstanceState.get(KEY_X);
+        		int y = (Integer) savedInstanceState.get(KEY_Y);
+        		Point p = new Point(x,y);
         		worldView.setViewport(p);
         		Log.d(TAG,"Setting viewport to "+p.toString());
         	} else {
-            	Log.d(TAG,"savedInstanceState doesn't contain "+KEY_POINT);
+            	Log.d(TAG,"savedInstanceState doesn't contain "+KEY_X+","+KEY_Y);
         	}
         } else {
         	Log.d(TAG,"savedInstanceState is null");
@@ -40,7 +42,8 @@ public class WorldMapActivity extends Activity {
 	protected void onSaveInstanceState(Bundle outState) {
 		Log.d(TAG, "onSaveInstanceState()");
 		Point p = worldView.getViewport();
-		outState.putParcelable(KEY_POINT, (Parcelable) p);
+		outState.putInt(KEY_X, p.x);
+		outState.putInt(KEY_Y, p.y);
 		super.onSaveInstanceState(outState);
 	}
 }
