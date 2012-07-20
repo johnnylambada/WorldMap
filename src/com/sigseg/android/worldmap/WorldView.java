@@ -71,7 +71,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	}
 	
 	private void init(Context context){
-		gestureDectector = new GestureDetector(this);
+		gestureDectector = new GestureDetector(context,this);
 		getHolder().addCallback(this);
 		try {
 			InputStream is = context.getAssets().open("world.jpg");
