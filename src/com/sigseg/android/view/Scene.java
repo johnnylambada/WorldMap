@@ -36,7 +36,7 @@ import android.util.Log;
  */
 public abstract class Scene {
 	private final String TAG = "Scene";
-	private final boolean DEBUG = true;
+	private final boolean DEBUG = false;
 
 	/** The size of the Scene */
 	private Point size = new Point();
@@ -270,7 +270,7 @@ public abstract class Scene {
 		void draw(Canvas c){
 			cache.update(this);
 			synchronized (this){
-				if (bitmap!=null){
+				if (c!=null && bitmap!=null){
 					if (translation!=null)
 						c.translate(translation.x, translation.y);
 					c.drawBitmap( bitmap, null, identity, null );
@@ -295,7 +295,7 @@ public abstract class Scene {
 		CacheState state = CacheState.UNINITIALIZED;
 
 		void setState(CacheState newState){
-			Log.i(TAG,String.format("cacheState old=%s new=%s",state.toString(),newState.toString()));
+			if (DEBUG) Log.i(TAG,String.format("cacheState old=%s new=%s",state.toString(),newState.toString()));
 			state = newState;
 		}
 		CacheState getState(){ return state; }

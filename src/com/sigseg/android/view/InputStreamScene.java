@@ -14,6 +14,7 @@ import android.util.Log;
 public class InputStreamScene extends Scene {
 	private static final String TAG="InputStreamScene";
 	
+	private final boolean DEBUG = false;
 	private final BitmapFactory.Options options = new BitmapFactory.Options();
 	private BitmapRegionDecoder decoder;
 	private Bitmap sampleBitmap;
@@ -140,7 +141,7 @@ public class InputStreamScene extends Scene {
 		
 		// Set the origin based on our new calculated values.
 		calculatedCacheWindowRect.set(left, top, right, bottom);
-		Log.d(TAG,"new cache.originRect = "+calculatedCacheWindowRect.toShortString()+" size="+size.toString());
+		if (DEBUG) Log.d(TAG,"new cache.originRect = "+calculatedCacheWindowRect.toShortString()+" size="+size.toString());
 		return calculatedCacheWindowRect;
 	}
 
