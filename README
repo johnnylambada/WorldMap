@@ -4,21 +4,7 @@ The map itself is quite large (6480,3888), so it's way too big to fit in memory 
 
 So WorldMap uses the BitmapRegionDecoder API (available as of API 10) to decode just what it needs to display.
 
-Tag            description
--------------- ------------------------------------------------------
-120410-initial The initial version is quite dumb. It's able to track
-               the user, but it decodes the entire bitmap each time,
-               making the user experience quite choppy. About 4fps.
-
-120411-cached  This is much faster, average case of about 20fps. With
-               this version I read in 50% more picture in each direction
-               whenever I need to read.  Played with this against the
-               "largest image in wikipedia"
-               http://boingboing.net/2010/11/09/biggest-image-on-wik.html
-               It's a 25mb jpg weighing in at 27184,16995 px! I was able
-               to scroll all the way across and down the image with no
-               problems. Uncompressed, this file would take up
-               27184*16995*16/8 bytes (881 megs) of memory.
+WorldMap is available on the Google Play store here: https://play.google.com/store/apps/details?id=com.sigseg.android.worldmap
 
 Road Map
 --------
