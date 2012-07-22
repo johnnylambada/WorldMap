@@ -17,24 +17,19 @@ public class WorldMapActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG,"onCreate()");
         // Hide the window title.
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
         worldView = (WorldView) findViewById(R.id.worldview);
-        if (savedInstanceState!=null) {
-        	if (savedInstanceState.containsKey(KEY_X) && savedInstanceState.containsKey(KEY_Y)){
-        		int x = (Integer) savedInstanceState.get(KEY_X);
-        		int y = (Integer) savedInstanceState.get(KEY_Y);
-        		Point p = new Point(x,y);
-        		worldView.setViewport(p);
-        		Log.d(TAG,"Setting viewport to "+p.toString());
-        	} else {
-            	Log.d(TAG,"savedInstanceState doesn't contain "+KEY_X+","+KEY_Y);
-        	}
+        if (savedInstanceState!=null && savedInstanceState.containsKey(KEY_X) && savedInstanceState.containsKey(KEY_Y)){
+    		int x = (Integer) savedInstanceState.get(KEY_X);
+        	int y = (Integer) savedInstanceState.get(KEY_Y);
+        	Point p = new Point(x,y);
+        	worldView.setViewport(p);
         } else {
-        	Log.d(TAG,"savedInstanceState is null");
+           	// Centering the map to start
+        	worldView.setViewportCenter();
         }
     }
 
