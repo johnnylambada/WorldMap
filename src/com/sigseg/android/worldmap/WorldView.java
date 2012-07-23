@@ -182,7 +182,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		            c = surfaceHolder.lockCanvas();
 		            if (c!=null){
 			            synchronized (surfaceHolder) {
-			        		scene.draw(c);// draw it
+			        		scene.draw(c, 2);// draw it
 			            }
 		            }
 		        } finally {
