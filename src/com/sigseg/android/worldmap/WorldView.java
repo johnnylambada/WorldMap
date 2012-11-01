@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Scroller;
@@ -24,6 +25,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	private final InputStreamScene scene = new InputStreamScene();
 	private final Touch touch;
 	private GestureDetector gestureDectector;
+	private ScaleGestureDetector scaleGestureDetector;
 	
 	private DrawThread drawThread;
 	
@@ -51,9 +53,14 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
     	boolean consumed = gestureDectector.onTouchEvent(me);
     	if (consumed)
     		return true;
-        switch (me.getAction()) {
+    	scaleGestureDetector.onTouchEvent(me);
+    	
+        switch (me.getAction() & MotionEvent.ACTION_MASK) {
 	        case MotionEvent.ACTION_DOWN: return touch.down(me);
-	        case MotionEvent.ACTION_MOVE: return touch.move(me);
+	        case MotionEvent.ACTION_MOVE: 
+	            if (!scaleGestureDetector.isInProgress()) {
+	                return touch.move(me);
+	            }
 	        case MotionEvent.ACTION_UP: return touch.up(me);
 	        case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
         }
@@ -81,6 +88,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	
 	private void init(Context context){
 		gestureDectector = new GestureDetector(context,this);
+		scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
 		getHolder().addCallback(this);
 		try {
 			InputStream is = context.getAssets().open("world.jpg");
@@ -194,6 +202,21 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		}
 	}
 	//[end]
+	
+	//[start] class ScaleListener
+	private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+
+            scene.changeScaleFactor(detector.getScaleFactor());
+
+            invalidate();
+            return true;
+        }
+    }
+	//[end]
+	
+	
 	//[start] class Touch
 	enum TouchState {UNTOUCHED,IN_TOUCH,START_FLING,IN_FLING};
 	class Touch {

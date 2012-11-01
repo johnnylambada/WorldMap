@@ -74,6 +74,36 @@ public class InputStreamScene extends Scene {
 		int bottom = top + (c.getHeight()>>downShift);
 		Rect srcRect = new Rect( left, top, right, bottom );
 		Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
+		float scaleFactor = getScaleFactor();
+		
+		// scale factor is inferior to 1 (i.e. the user is unzooming) 
+		if (scaleFactor < 1f) {
+
+            left = (int) (left / scaleFactor);
+            top = (int) (top / scaleFactor);
+            right = (int) (right / scaleFactor);
+            bottom = (int) (bottom / scaleFactor);
+
+            // we need to make sure
+            // to not let the user go "outside" of the image
+            if (right > getSceneSize().x >> downShift) {
+
+                int w = right - left;
+
+                right = getSceneSize().x >> downShift;
+                left = right - w;
+
+            }
+            if (bottom > getSceneSize().y >> downShift) {
+
+                int h = bottom - top;
+                bottom = getSceneSize().y >> downShift;
+
+                top = bottom - h;
+            }
+
+            srcRect = new Rect(left, top, right, bottom);
+        }
 		c.drawBitmap(
 			sampleBitmap,
 			srcRect,
