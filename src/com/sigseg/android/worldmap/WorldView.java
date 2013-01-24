@@ -1,4 +1,4 @@
-																																																																																																																																																																				package com.sigseg.android.worldmap;
+package com.sigseg.android.worldmap;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +30,7 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	private DrawThread drawThread;
 	
 	//[start] getters and setters
+
 	public Point getViewport(){
 		return scene.getViewportOrigin();
 	}
@@ -46,6 +47,15 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		int y = (sceneSize.y-viewportSize.y)/2;
 		scene.setViewportOrigin(x, y);
 	}
+        public void setImageIS(InputStream im)
+        {
+	    try{
+		scene.setInputStream(im);
+	    }catch (java.io.IOException e) {
+			Log.e(TAG, e.getMessage());
+	    }
+        }
+
 	//[end]
 	//[start] View overrides
     @Override
@@ -90,12 +100,15 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 		gestureDectector = new GestureDetector(context,this);
 		scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
 		getHolder().addCallback(this);
-		try {
-			InputStream is = context.getAssets().open("world.jpg");
-			scene.setInputStream(is);
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		}
+		//try {
+		//        Uri uri = context.getIntent() != null ? context.getIntent().getData() : null;
+		//	InputStream is;
+		//	if (uri != null ) is = uri;
+		//	else is = context.getAssets().open("world.jpg");
+		//	scene.setInputStream(is);
+		//} catch (IOException e) {
+		//	Log.e(TAG, e.getMessage());
+		//}
 	}
 	//[end]
     //[start] SurfaceHolder.Callback overrides

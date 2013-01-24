@@ -524,6 +524,7 @@ public abstract class Scene {
 				    		long done = System.currentTimeMillis();
 				    		if (DEBUG) Log.d(TAG,String.format("fillCache in %dms",done-start)); 
 						} catch (OutOfMemoryError e){
+						    	    Log.d(TAG,"CacheThread out of memory");
 							/*
 							 *  Attempt to recover. Experience shows that if we
 							 *  do get an OutOfMemoryError, we're pretty hosed and are going down.
