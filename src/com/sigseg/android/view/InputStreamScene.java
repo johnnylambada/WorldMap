@@ -59,10 +59,11 @@ public class InputStreamScene extends Scene {
 
 	@Override
 	protected Bitmap fillCache(Rect origin) {
-		Bitmap bitmap = decoder.decodeRegion( origin, options );
+        Bitmap bitmap = null;
+        if (decoder!=null && options!=null)
+		    bitmap = decoder.decodeRegion( origin, options );
 		return bitmap;
 	}
-
 
 	@Override
 	protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {

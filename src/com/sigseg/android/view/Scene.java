@@ -513,14 +513,16 @@ public abstract class Scene {
 					if (cont){
 						try{
 							Bitmap bitmap = fillCache(cache.window);
-							synchronized (cache){
-								if (cache.getState()==CacheState.IN_UPDATE){
-									cache.bitmapRef = bitmap;
-									cache.setState(CacheState.READY);
-								} else {
-									Log.w(TAG,"fillCache operation aborted");
-								}
-							}
+                            if (bitmap!=null){
+                                synchronized (cache){
+                                    if (cache.getState()==CacheState.IN_UPDATE){
+                                        cache.bitmapRef = bitmap;
+                                        cache.setState(CacheState.READY);
+                                    } else {
+                                        Log.w(TAG,"fillCache operation aborted");
+                                    }
+                                }
+                            }
 				    		long done = System.currentTimeMillis();
 				    		if (DEBUG) Log.d(TAG,String.format("fillCache in %dms",done-start)); 
 						} catch (OutOfMemoryError e){
