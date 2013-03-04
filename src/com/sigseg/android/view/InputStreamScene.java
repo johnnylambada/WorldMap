@@ -34,9 +34,8 @@ public class InputStreamScene extends Scene {
 	
 	
 	/**
-	 * Set the Scene to the named asset
-	 * @param context
-	 * @param assetName
+	 * Set the input stream
+     * @param inputStream
 	 * @throws IOException
 	 */
 	public void setInputStream(InputStream inputStream) throws IOException {
@@ -67,49 +66,51 @@ public class InputStreamScene extends Scene {
 
 	@Override
 	protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {
-		Canvas c = new Canvas(bitmap);
-		int left   = (rectOfSample.left>>downShift);
-		int top    = (rectOfSample.top>>downShift);
-		int right  = left + (c.getWidth()>>downShift);
-		int bottom = top + (c.getHeight()>>downShift);
-		Rect srcRect = new Rect( left, top, right, bottom );
-		Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
-		float scaleFactor = getScaleFactor();
-		
-		// scale factor is inferior to 1 (i.e. the user is unzooming) 
-		if (scaleFactor < 1f) {
+        if (bitmap!=null){
+            Canvas c = new Canvas(bitmap);
+            int left   = (rectOfSample.left>>downShift);
+            int top    = (rectOfSample.top>>downShift);
+            int right  = left + (c.getWidth()>>downShift);
+            int bottom = top + (c.getHeight()>>downShift);
+            Rect srcRect = new Rect( left, top, right, bottom );
+            Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
+            float scaleFactor = getScaleFactor();
 
-            left = (int) (left / scaleFactor);
-            top = (int) (top / scaleFactor);
-            right = (int) (right / scaleFactor);
-            bottom = (int) (bottom / scaleFactor);
+            // scale factor is inferior to 1 (i.e. the user is unzooming)
+            if (scaleFactor < 1f) {
 
-            // we need to make sure
-            // to not let the user go "outside" of the image
-            if (right > getSceneSize().x >> downShift) {
+                left = (int) (left / scaleFactor);
+                top = (int) (top / scaleFactor);
+                right = (int) (right / scaleFactor);
+                bottom = (int) (bottom / scaleFactor);
 
-                int w = right - left;
+                // we need to make sure
+                // to not let the user go "outside" of the image
+                if (right > getSceneSize().x >> downShift) {
 
-                right = getSceneSize().x >> downShift;
-                left = right - w;
+                    int w = right - left;
 
+                    right = getSceneSize().x >> downShift;
+                    left = right - w;
+
+                }
+                if (bottom > getSceneSize().y >> downShift) {
+
+                    int h = bottom - top;
+                    bottom = getSceneSize().y >> downShift;
+
+                    top = bottom - h;
+                }
+
+                srcRect = new Rect(left, top, right, bottom);
             }
-            if (bottom > getSceneSize().y >> downShift) {
-
-                int h = bottom - top;
-                bottom = getSceneSize().y >> downShift;
-
-                top = bottom - h;
-            }
-
-            srcRect = new Rect(left, top, right, bottom);
+            c.drawBitmap(
+                sampleBitmap,
+                srcRect,
+                identity,
+                null
+                );
         }
-		c.drawBitmap(
-			sampleBitmap,
-			srcRect,
-			identity,
-			null
-			);
 	}
 
 //	@Override
