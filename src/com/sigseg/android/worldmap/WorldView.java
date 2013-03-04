@@ -38,23 +38,25 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
 	public void setViewport(Point viewport){
 		scene.setViewportOrigin(viewport.x, viewport.y);
 	}
-	public void setViewportCenter() {
-		Point viewportSize = new Point();;
-		Point sceneSize = scene.getSceneSize();
-		scene.getViewportSize(viewportSize);
-		
-		int x = (sceneSize.x-viewportSize.x)/2;
-		int y = (sceneSize.y-viewportSize.y)/2;
-		scene.setViewportOrigin(x, y);
-	}
-        public void setImageIS(InputStream im)
-        {
-	    try{
-		scene.setInputStream(im);
-	    }catch (java.io.IOException e) {
-			Log.e(TAG, e.getMessage());
-	    }
+
+    public void setViewportCenter() {
+        Point viewportSize = new Point();
+        ;
+        Point sceneSize = scene.getSceneSize();
+        scene.getViewportSize(viewportSize);
+
+        int x = (sceneSize.x - viewportSize.x) / 2;
+        int y = (sceneSize.y - viewportSize.y) / 2;
+        scene.setViewportOrigin(x, y);
+    }
+
+    public void setImageIS(InputStream im) {
+        try {
+            scene.setInputStream(im);
+        } catch (java.io.IOException e) {
+            Log.e(TAG, e.getMessage());
         }
+    }
 
 	//[end]
 	//[start] View overrides
