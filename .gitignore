@@ -1,4 +1,4 @@
 bin/
 gen/
-*.iml
+out/
 ant.properties
