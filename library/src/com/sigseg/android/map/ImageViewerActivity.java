@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import com.sigseg.android.io.RandomAccessFileInputStream;
+import com.sigseg.android.map.lib.R;
 
 
 public class ImageViewerActivity extends Activity {
