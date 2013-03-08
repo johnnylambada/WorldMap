@@ -3,7 +3,7 @@
 // expect - it has been deliberately botched to work around bugs in 
 // other software.
 
-package com.sigseg.android.worldmap;
+package com.sigseg.android.io;
 
 import java.io.File;
 import java.io.InputStream;

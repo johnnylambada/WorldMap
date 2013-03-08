@@ -1,6 +1,5 @@
-package com.sigseg.android.worldmap;
+package com.sigseg.android.map;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import android.content.Context;
@@ -18,8 +17,8 @@ import android.widget.Scroller;
 
 import com.sigseg.android.view.InputStreamScene;
 
-public class WorldView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
-	private final static String TAG = "WorldView";
+public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
+	private final static String TAG = ImageSurfaceView.class.getSimpleName();
 
 //	private long startTime=0;
 	private final InputStreamScene scene = new InputStreamScene();
@@ -80,19 +79,19 @@ public class WorldView extends SurfaceView implements SurfaceHolder.Callback, On
     }
 	//[end]
 	//[start] SurfaceHolder.Callback constructors
-	public WorldView(Context context) {
+	public ImageSurfaceView(Context context) {
 		super(context);
 		touch = new Touch(context);
 		init(context);
 	}
 	
-	public WorldView(Context context, AttributeSet attrs, int defStyle) {
+	public ImageSurfaceView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		touch = new Touch(context);
 		init(context);
 	}
 
-	public WorldView(Context context, AttributeSet attrs) {
+	public ImageSurfaceView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		touch = new Touch(context);
 		init(context);
