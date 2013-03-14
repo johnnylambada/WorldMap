@@ -44,10 +44,10 @@ public class ImageViewerActivity extends Activity {
             try {
                 if (fn == "" || fn == null) {
                     Log.d(TAG, "restore, setting stream to world.jpg");
-                    imageSurfaceView.setImageIS(getAssets().open("world.jpg"));
+                    imageSurfaceView.setInputStream(getAssets().open("world.jpg"));
                 } else {
                     Log.d(TAG, "restore, opening file " + fn);
-                    imageSurfaceView.setImageIS(new RandomAccessFileInputStream(fn));
+                    imageSurfaceView.setInputStream(new RandomAccessFileInputStream(fn));
                 }
                 imageSurfaceView.setViewport(p);
             } catch (java.io.IOException e) {
@@ -68,7 +68,7 @@ public class ImageViewerActivity extends Activity {
                     filename = "";
                 }
 
-                imageSurfaceView.setImageIS(is);
+                imageSurfaceView.setInputStream(is);
                 Log.d(TAG, "filename is " + filename);
             } catch (java.io.IOException e) {
                 Log.e(TAG, e.getMessage());
