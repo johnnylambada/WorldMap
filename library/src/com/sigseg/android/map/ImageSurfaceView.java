@@ -1,20 +1,17 @@
 package com.sigseg.android.map;
 
-import java.io.InputStream;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
+import android.view.*;
 import android.view.GestureDetector.OnGestureListener;
-import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.widget.Scroller;
-
 import com.sigseg.android.view.InputStreamScene;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
     private final static String TAG = ImageSurfaceView.class.getSimpleName();
@@ -45,12 +42,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         scene.setViewportOrigin(x, y);
     }
 
-    public void setImageIS(InputStream im) {
-        try {
-            scene.setInputStream(im);
-        } catch (java.io.IOException e) {
-            Log.e(TAG, e.getMessage());
-        }
+    public void setInputStream(InputStream inputStream) throws IOException {
+        scene.setInputStream(inputStream);
     }
 
     //endregion
