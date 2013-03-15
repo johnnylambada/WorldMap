@@ -19,15 +19,13 @@ import com.sigseg.android.view.InputStreamScene;
 public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
     private final static String TAG = ImageSurfaceView.class.getSimpleName();
 
-//    private long startTime=0;
     private final InputStreamScene scene = new InputStreamScene();
     private final Touch touch;
     private GestureDetector gestureDectector;
 
     private DrawThread drawThread;
     
-    //[start] getters and setters
-
+    //region getters and setters
     public Point getViewport(){
         return scene.getViewportOrigin();
     }
@@ -55,8 +53,9 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         }
     }
 
-    //[end]
-    //[start] View overrides
+    //endregion
+
+    //region View overrides
     @Override
     public boolean onTouchEvent(MotionEvent me) {
         boolean consumed = gestureDectector.onTouchEvent(me);
@@ -70,8 +69,9 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         }
         return super.onTouchEvent(me);
     }
-    //[end]
-    //[start] SurfaceHolder.Callback constructors
+    //endregion
+
+    //region SurfaceHolder.Callback constructors
     public ImageSurfaceView(Context context) {
         super(context);
         touch = new Touch(context);
@@ -93,18 +93,10 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private void init(Context context){
         gestureDectector = new GestureDetector(context,this);
         getHolder().addCallback(this);
-        //try {
-        //        Uri uri = context.getIntent() != null ? context.getIntent().getData() : null;
-        //    InputStream is;
-        //    if (uri != null ) is = uri;
-        //    else is = context.getAssets().open("world.jpg");
-        //    scene.setInputStream(is);
-        //} catch (IOException e) {
-        //    Log.e(TAG, e.getMessage());
-        //}
     }
-    //[end]
-    //[start] SurfaceHolder.Callback overrides
+    //endregion
+
+    //region SurfaceHolder.Callback overrides
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         scene.setViewportSize(width, height);
@@ -136,43 +128,42 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
             }
         }
     }
-    //[end]
-    //[start] OnGestureListener
+    //endregion
+
+    //region OnGestureListener
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return touch.fling( e1, e2, velocityX, velocityY);
     }
-    //[start] the rest are defaults
+    //region the rest are defaults
     @Override
     public boolean onDown(MotionEvent e) {
-//        Log.d(TAG,"onDown");
         return false;
     }
 
     @Override
     public void onLongPress(MotionEvent e) {
-//        Log.d(TAG,"onLongPress");
     }
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-//        Log.d(TAG,"onScroll");
         return false;
     }
 
     @Override
     public void onShowPress(MotionEvent e) {
-//        Log.d(TAG,"onShowPress");
     }
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
-//        Log.d(TAG,"onSingleTapUp");
         return false;
     }
-    // [end]
-    //[end]
-    //[start] class DrawThread
+    //endregion
+
+    //endregion
+
+    //region class DrawThread
+
     class DrawThread extends Thread {
         private SurfaceHolder surfaceHolder;
 
@@ -207,8 +198,10 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
             }        
         }
     }
-    //[end]
-    //[start] class Touch
+    //endregion
+
+    //region class Touch
+
     enum TouchState {UNTOUCHED,IN_TOUCH,START_FLING,IN_FLING};
     class Touch {
         TouchState state = TouchState.UNTOUCHED;
@@ -358,5 +351,6 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
             }
         }
     }
-    //[end]
+    //endregion
+
 }
