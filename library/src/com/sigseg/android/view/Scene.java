@@ -45,9 +45,6 @@ public abstract class Scene {
 	/** The cache */
 	private final Cache cache = new Cache();
 	
-	/** The current scale factor */
-	private float scaleFactor = 1;
-
 	//[start] [gs]etSceneSize
 	/** Set the size of the scene */
 	public void setSceneSize(int width, int height){
@@ -104,30 +101,6 @@ public abstract class Scene {
 		viewport.getTranslation(p);
 	}
 	//[end]
-	
-	
-	//[start] changeScaleFactor/getScaleFactor
-	public void changeScaleFactor(float multiplier) {
-	    
-	    float tempScaleFactor = scaleFactor * multiplier;
-
-        // Don't let the object get too small or too large.
-        Point viewportSize = new Point();
-        Point sceneSize = getSceneSize();
-        getViewportSize(viewportSize);
-        float min = Math.max((float) viewportSize.x / (float) sceneSize.x, (float) viewportSize.y / (float) sceneSize.y);
-        tempScaleFactor = Math.max(min, Math.min(tempScaleFactor, 5.0f));
-	    
-	    // change the real scale factor used by the display thread
-        scaleFactor = tempScaleFactor;
-    }
-	
-	public float getScaleFactor() {
-	    return scaleFactor;
-	}
-	
-	//[end]
-	
 	//[start] initialize/start/stop/suspend/invalidate the cache
 	/** Initializes the cache */
 	public void initialize(){
@@ -300,11 +273,7 @@ public abstract class Scene {
 				if (c!=null && bitmap!=null){
 					if (translation!=null)
 						c.translate(translation.x, translation.y);
-					Rect srcRect = null;
-                    if (scaleFactor >= 1f) {
-                        srcRect = new Rect(0, 0, (int) (identity.right / scaleFactor), (int) (identity.bottom / scaleFactor));
-                    }
-					c.drawBitmap( bitmap, srcRect, identity, null );
+					c.drawBitmap( bitmap, null, identity, null );
 					if (translation!=null)
 						c.translate(-translation.x, -translation.y);
 					drawComplete(c);
@@ -404,8 +373,7 @@ public abstract class Scene {
 					break;
 				}
 			}
-			// draw the sample if the cache is not ready or if the scale factor is below 1
-			if (bitmap==null ||scaleFactor < 1f)
+			if (bitmap==null)
 				loadSampleIntoViewport(viewport);
 			else
 				loadBitmapIntoViewport(bitmap, viewport);
@@ -418,10 +386,6 @@ public abstract class Scene {
 					int top    = viewport.window.top  - window.top;
 					int right  = left + viewport.window.width();
 					int bottom = top  + viewport.window.height();
-					if (scaleFactor < 1f) {
-                        right = (int) (left + viewport.window.width() / scaleFactor);
-                        bottom = (int) (top + viewport.window.height() / scaleFactor);
-                    }
 					srcRect.set( left, top, right, bottom );
 					Canvas c = new Canvas(viewport.bitmap);
 					c.drawBitmap(
