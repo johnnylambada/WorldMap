@@ -14,14 +14,14 @@ import com.sigseg.android.map.lib.R;
 
 
 public class ImageViewerActivity extends Activity {
-	private static final String TAG = "ImageViewerActivity";
-	private static final String KEY_X = "X";
-	private static final String KEY_Y = "Y";
-	private static final String KEY_FN = "FN";
-	
-	private ImageSurfaceView imageSurfaceView;
+    private static final String TAG = "ImageViewerActivity";
+    private static final String KEY_X = "X";
+    private static final String KEY_Y = "Y";
+    private static final String KEY_FN = "FN";
+    
+    private ImageSurfaceView imageSurfaceView;
         String filename;
-	
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,12 +78,12 @@ public class ImageViewerActivity extends Activity {
     }
 
     @Override
-	protected void onSaveInstanceState(Bundle outState) {
-		Log.d(TAG, "onSaveInstanceState() filename "+filename);
-		Point p = imageSurfaceView.getViewport();
-		outState.putInt(KEY_X, p.x);
-		outState.putInt(KEY_Y, p.y);
-		outState.putString(KEY_FN, filename);
-		super.onSaveInstanceState(outState);
-	}
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.d(TAG, "onSaveInstanceState() filename "+filename);
+        Point p = imageSurfaceView.getViewport();
+        outState.putInt(KEY_X, p.x);
+        outState.putInt(KEY_Y, p.y);
+        outState.putString(KEY_FN, filename);
+        super.onSaveInstanceState(outState);
+    }
 }
