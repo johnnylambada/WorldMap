@@ -12,33 +12,31 @@ import android.graphics.Rect;
 import android.util.Log;
 
 public class InputStreamScene extends Scene {
-    private static final String TAG="InputStreamScene";
+    private static final String TAG=InputStreamScene.class.getSimpleName();
     
-    private final boolean DEBUG = false;
-    private final BitmapFactory.Options options = new BitmapFactory.Options();
-    private BitmapRegionDecoder decoder;
-    private Bitmap sampleBitmap;
+    private static final boolean DEBUG = false;
+    private static final BitmapFactory.Options options = new BitmapFactory.Options();
+
     /** What is the downsample size for the sample image?  1=1/2, 2=1/4 3=1/8, etc */
-    private final int downShift = 2;
+    private static final int DOWN_SAMPLE_SHIFT = 2;
+
+    /** How many bytes does one pixel use? */
+    private final int BYTES_PER_PIXEL = 4;
+
     /** What percent of total memory should we use for the cache? The bigger the cache,
      * the longer it takes to read -- 1.2 secs for 25%, 600ms for 10%, 500ms for 5%.
      * User experience seems to be best for smaller values. 
      */
-    int percent = 5; // Above 25 and we get OOMs
-    /** How many bytes does one pixel use? */
-    final int BYTES_PER_PIXEL = 4;
+    private int percent = 5; // Above 25 and we get OOMs
 
-    public InputStreamScene(){
+    private BitmapRegionDecoder decoder;
+    private Bitmap sampleBitmap;
+
+    static {
         options.inPreferredConfig = Bitmap.Config.RGB_565;
     }
-    
-    
-    /**
-     * Set the input stream
-     * @param inputStream
-     * @throws IOException
-     */
-    public void setInputStream(InputStream inputStream) throws IOException {
+
+    public InputStreamScene(InputStream inputStream) throws IOException {
         BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
 
         this.decoder = BitmapRegionDecoder.newInstance(inputStream, false);
@@ -47,15 +45,14 @@ public class InputStreamScene extends Scene {
         tmpOptions.inJustDecodeBounds = true;
         BitmapFactory.decodeStream(inputStream, null, tmpOptions);
         setSceneSize(tmpOptions.outWidth, tmpOptions.outHeight);
-        
+
         // Create the sample image
         tmpOptions.inJustDecodeBounds = false;
-        tmpOptions.inSampleSize = (1<<downShift);
+        tmpOptions.inSampleSize = (1<< DOWN_SAMPLE_SHIFT);
         sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
-        
+
         initialize();
     }
-
 
     @Override
     protected Bitmap fillCache(Rect origin) {
@@ -69,10 +66,10 @@ public class InputStreamScene extends Scene {
     protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {
         if (bitmap!=null){
             Canvas c = new Canvas(bitmap);
-            int left   = (rectOfSample.left>>downShift);
-            int top    = (rectOfSample.top>>downShift);
-            int right  = left + (c.getWidth()>>downShift);
-            int bottom = top + (c.getHeight()>>downShift);
+            int left   = (rectOfSample.left>> DOWN_SAMPLE_SHIFT);
+            int top    = (rectOfSample.top>> DOWN_SAMPLE_SHIFT);
+            int right  = left + (c.getWidth()>> DOWN_SAMPLE_SHIFT);
+            int bottom = top + (c.getHeight()>> DOWN_SAMPLE_SHIFT);
             Rect srcRect = new Rect( left, top, right, bottom );
             Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
             c.drawBitmap(

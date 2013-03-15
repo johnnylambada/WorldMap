@@ -16,7 +16,7 @@ import java.io.InputStream;
 public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
     private final static String TAG = ImageSurfaceView.class.getSimpleName();
 
-    private final InputStreamScene scene = new InputStreamScene();
+    private InputStreamScene scene;
     private final Touch touch;
     private GestureDetector gestureDectector;
 
@@ -43,7 +43,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     }
 
     public void setInputStream(InputStream inputStream) throws IOException {
-        scene.setInputStream(inputStream);
+        scene = new InputStreamScene(inputStream);
     }
 
     //endregion
