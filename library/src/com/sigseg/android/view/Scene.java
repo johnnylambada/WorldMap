@@ -45,8 +45,8 @@ public abstract class Scene {
 	/** The cache */
 	private final Cache cache = new Cache();
 	
-	//[start] [gs]etSceneSize
-	/** Set the size of the scene */
+    //region [gs]etSceneSize
+    /** Set the size of the scene */
 	public void setSceneSize(int width, int height){
 		size.set(width, height);
 	}
@@ -58,9 +58,10 @@ public abstract class Scene {
 	public void getSceneSize(Point point){
 		point.set(size.x, size.y);
 	}
-	//[end]
-	//[start] [gs]etViewport(Origin|Size|Translation)
-	/**
+    //endregion
+
+    //region [gs]etViewport(Origin|Size|Translation)
+    /**
 	 * Get the viewport origin.
 	 * @return the a new Point of the origin
 	 */
@@ -100,9 +101,10 @@ public abstract class Scene {
 	public void getViewportTranslation(Point p){
 		viewport.getTranslation(p);
 	}
-	//[end]
-	//[start] initialize/start/stop/suspend/invalidate the cache
-	/** Initializes the cache */
+    //endregion
+
+    //region initialize/start/stop/suspend/invalidate the cache
+    /** Initializes the cache */
 	public void initialize(){
 		if (cache.getState()==CacheState.UNINITIALIZED){
 			synchronized(cache){
@@ -141,9 +143,10 @@ public abstract class Scene {
 	public void invalidate(){
 		cache.invalidate();
 	}
-	//[end]
-	//[start] void draw(Canvas c)
-	/** 
+    //endregion
+
+    //region void draw(Canvas c)
+    /**
 	 * Draw the scene to the canvas. This operation fills the canvas with
 	 * the bitmap referenced by the viewport's location within the Scene.
 	 * If the cache already has the data (and is not suspended), then the
@@ -153,8 +156,9 @@ public abstract class Scene {
 	public void draw(Canvas c){
 		viewport.draw(c);
 	}
-	//[end]
-	//[start] protected abstract
+    //endregion
+
+	//region protected abstract
 	/**
 	 * This method must return a high resolution Bitmap that the Scene 
 	 * will use to fill out the viewport bitmap upon request. This bitmap
@@ -199,8 +203,10 @@ public abstract class Scene {
 	 * @param canvas
 	 */
 	protected abstract void drawComplete(Canvas canvas);
-	//[end]
-	//[start] class Viewport
+	//endregion
+
+	//region class Viewport
+
 	private class Viewport {
 		/** The bitmap of the current viewport */
 		Bitmap bitmap = null;
@@ -281,8 +287,10 @@ public abstract class Scene {
 			}
 		}
 	}
-	//[end]
-	//[start] class Cache
+	//endregion
+
+	//region class Cache
+
 	private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY,SUSPEND};
 	/**
 	 * Keep track of the cached bitmap
@@ -417,8 +425,9 @@ public abstract class Scene {
 			}
 		}
 	}
-	//[end]
-	//[start] class CacheThread
+	//endregion
+
+	//region class CacheThread
 	/**
 	 * <p>The CacheThread's job is to wait until the {@link Cache#state} is 
 	 * {@link CacheState#START_UPDATE} and then update the {@link Cache} given
@@ -507,5 +516,5 @@ public abstract class Scene {
 			}
 		}
 	}
-	//[end]
+	//endregion
 }
