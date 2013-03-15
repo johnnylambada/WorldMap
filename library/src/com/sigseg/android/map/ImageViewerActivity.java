@@ -64,7 +64,7 @@ public class ImageViewerActivity extends Activity {
                 InputStream is;
                 if (uri != null) {
                     filename = uri.getPath();
-                    is = (InputStream) new RandomAccessFileInputStream(uri.getPath());
+                    is = new RandomAccessFileInputStream(uri.getPath());
                 } else {
                     is = getAssets().open("world.jpg");
                 }
