@@ -192,8 +192,6 @@ public abstract class Scene {
     private class Viewport {
         /** The bitmap of the current viewport */
         Bitmap bitmap = null;
-        /** A Rect that can be used for drawing. Same size as bitmap */
-        final Rect identity = new Rect(0,0,0,0);
         /** A Rect that defines where the Viewport is within the scene */
         final Rect window = new Rect(0,0,0,0);
 
@@ -225,7 +223,6 @@ public abstract class Scene {
                     bitmap = null;
                 }
                 bitmap = Bitmap.createBitmap(w, h, Config.RGB_565);
-                identity.set(0, 0, w, h);
                 window.set(
                         window.left,
                         window.top,
@@ -240,8 +237,8 @@ public abstract class Scene {
         }
         void getSize(Point p){
             synchronized (this) {
-                p.x = identity.right;
-                p.y = identity.bottom;
+                p.x = window.width();
+                p.y = window.height();
             }
         }
         void zoom(float factor, float focusX, float focusY){
@@ -255,7 +252,7 @@ public abstract class Scene {
             cache.update(this);
             synchronized (this){
                 if (c!=null && bitmap!=null){
-                    c.drawBitmap( bitmap, null, identity, null );
+                    c.drawBitmap( bitmap, 0F, 0F, null);
                     drawComplete(c);
                 }
             }
@@ -369,13 +366,13 @@ public abstract class Scene {
                     int right  = left + viewport.window.width();
                     int bottom = top  + viewport.window.height();
                     srcRect.set( left, top, right, bottom );
+                    dstRect.set( 0, 0, srcRect.width(), srcRect.height());
                     Canvas c = new Canvas(viewport.bitmap);
                     c.drawBitmap(
                             bitmap,
                             srcRect,
-                            viewport.identity,
+                            dstRect,
                             null);
-                    
 //                    try {
 //                        FileOutputStream fos = new FileOutputStream("/sdcard/viewport.png");
 //                        viewport.bitmap.compress(Bitmap.CompressFormat.PNG, 99, fos);
@@ -387,6 +384,7 @@ public abstract class Scene {
             }
         }
         final Rect srcRect = new Rect(0,0,0,0);
+        final Rect dstRect = new Rect(0,0,0,0);
         
         void loadSampleIntoViewport(Viewport viewport){
             if (getState()!=CacheState.UNINITIALIZED){
