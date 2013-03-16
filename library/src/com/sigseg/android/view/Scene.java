@@ -360,12 +360,12 @@ public abstract class Scene {
                 }
             }
             if (bitmap==null)
-                loadSampleIntoViewport(viewport);
+                loadSampleIntoViewport();
             else
-                loadBitmapIntoViewport(bitmap, viewport);
+                loadBitmapIntoViewport(bitmap);
         }
         
-        void loadBitmapIntoViewport(Bitmap bitmap, Viewport viewport){
+        void loadBitmapIntoViewport(Bitmap bitmap){
             if (bitmap!=null){
                 synchronized(viewport){
                     int left   = viewport.window.left - window.left;
@@ -393,7 +393,7 @@ public abstract class Scene {
         final Rect srcRect = new Rect(0,0,0,0);
         final Rect dstRect = new Rect(0,0,0,0);
         
-        void loadSampleIntoViewport(Viewport viewport){
+        void loadSampleIntoViewport(){
             if (getState()!=CacheState.UNINITIALIZED){
                 synchronized(viewport){
                     drawSampleRectIntoBitmap(

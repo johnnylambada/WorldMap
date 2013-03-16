@@ -57,7 +57,7 @@ public class InputStreamScene extends Scene {
     @Override
     protected Bitmap fillCache(Rect origin) {
         Bitmap bitmap = null;
-        if (decoder!=null && options!=null)
+        if (decoder!=null)
             bitmap = decoder.decodeRegion( origin, options );
         return bitmap;
     }
