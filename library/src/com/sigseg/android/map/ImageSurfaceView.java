@@ -13,15 +13,16 @@ import com.sigseg.android.view.InputStreamScene;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener{
+public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener  {
     private final static String TAG = ImageSurfaceView.class.getSimpleName();
 
     private InputStreamScene scene;
     private final Touch touch;
     private GestureDetector gestureDectector;
+    private ScaleGestureDetector scaleGestureDetector;
 
     private DrawThread drawThread;
-    
+
     //region getters and setters
     public Point getViewport(){
         return scene.getViewportOrigin();
@@ -48,15 +49,19 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     //endregion
 
-    //region View overrides
+    //region extends SurfaceView
     @Override
     public boolean onTouchEvent(MotionEvent me) {
         boolean consumed = gestureDectector.onTouchEvent(me);
         if (consumed)
             return true;
-        switch (me.getAction()) {
+        scaleGestureDetector.onTouchEvent(me);
+        switch (me.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN: return touch.down(me);
-            case MotionEvent.ACTION_MOVE: return touch.move(me);
+            case MotionEvent.ACTION_MOVE:
+                if (scaleGestureDetector.isInProgress())
+                    break;
+                return touch.move(me);
             case MotionEvent.ACTION_UP: return touch.up(me);
             case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
         }
@@ -86,10 +91,30 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private void init(Context context){
         gestureDectector = new GestureDetector(context,this);
         getHolder().addCallback(this);
+        scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
     }
     //endregion
 
-    //region SurfaceHolder.Callback overrides
+    //region class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+
+//            scene.changeScaleFactor(detector.getScaleFactor());
+            Log.d(TAG,String.format(
+                    "mag=%.3f, focus(%.0f,%.0f)",
+                    detector.getScaleFactor(),
+                    detector.getFocusX(),
+                    detector.getFocusY()));
+
+            invalidate();
+            return true;
+        }
+    }
+    //endregion
+
+
+    //region implements SurfaceHolder.Callback
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         scene.setViewportSize(width, height);
@@ -123,7 +148,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     }
     //endregion
 
-    //region OnGestureListener
+    //region implements OnGestureListener
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return touch.fling( e1, e2, velocityX, velocityY);
