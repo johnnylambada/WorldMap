@@ -79,7 +79,8 @@ public class ImageViewerActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        Point p = imageSurfaceView.getViewport();
+        Point p = new Point();
+        imageSurfaceView.getViewport(p);
         outState.putInt(KEY_X, p.x);
         outState.putInt(KEY_Y, p.y);
         if (filename!=null)

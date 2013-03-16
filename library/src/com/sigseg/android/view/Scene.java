@@ -61,37 +61,21 @@ public abstract class Scene {
     //endregion
 
     //region [gs]etViewport(Origin|Size)
-    /**
-     * Get the viewport origin.
-     * @return the a new Point of the origin
-     */
-    public Point getViewportOrigin(){
-        Point p = new Point();
-        synchronized(viewport){
-            p.set(viewport.window.left, viewport.window.top);
-        }
-        return p;
-    }
-    /**
-     * Set the passed-in point to the current viewport origin.
-     * @param point set() to the current viewport origin.
-     */
+    /** Update the pass-in Point with the viewport Origin */
     public void getViewportOrigin(Point point){
-        synchronized(viewport){
-            point.set(viewport.window.left, viewport.window.top);
-        }
+        viewport.getOrigin(point);
     }
     /** Set the Viewport origin */
     public void setViewportOrigin(int x, int y){
         viewport.setOrigin(x, y);
     }
+    /** Update the pass-in Point with the x value set to the viewport width, y set to height */
+    public void getViewportSize(Point point){
+        viewport.getSize(point);
+    }
     /** Set the size of the viewport within the scene */
     public void setViewportSize(int width, int height){
         viewport.setSize(width, height);
-    }
-    /** Return a Point with the x value set to the viewport width, y set to height */
-    public void getViewportSize(Point p){
-        viewport.getSize(p);
     }
     //endregion
 
@@ -242,6 +226,11 @@ public abstract class Scene {
                         window.top,
                         window.left + w,
                         window.top + h);
+            }
+        }
+        void getOrigin(Point p){
+            synchronized (this) {
+                p.set(window.left, window.top);
             }
         }
         void getSize(Point p){

@@ -24,8 +24,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private DrawThread drawThread;
 
     //region getters and setters
-    public Point getViewport(){
-        return scene.getViewportOrigin();
+    public void getViewport(Point p){
+        scene.getViewportOrigin(p);
     }
     
     public void setViewport(Point viewport){
@@ -34,7 +34,6 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     public void setViewportCenter() {
         Point viewportSize = new Point();
-        ;
         Point sceneSize = scene.getSceneSize();
         scene.getViewportSize(viewportSize);
 
@@ -297,7 +296,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 state = TouchState.IN_TOUCH;
                 viewDown.x = (int) event.getX();
                 viewDown.y = (int) event.getY();
-                Point p = scene.getViewportOrigin();
+                Point p = new Point();
+                scene.getViewportOrigin(p);
                 viewportOriginAtDown.set(p.x,p.y);
             }
             return true;
