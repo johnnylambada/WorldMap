@@ -79,6 +79,12 @@ public abstract class Scene {
     }
     //endregion
 
+    //region zoomViewport
+    public void zoomViewport(float factor, float focusX, float focusY){
+        viewport.zoom(factor, focusX, focusY);
+    }
+    //endregion
+
     //region initialize/start/stop/suspend/invalidate the cache
     /** Initializes the cache */
     public void initialize(){
@@ -212,7 +218,6 @@ public abstract class Scene {
                 window.set(x, y, x+w, y+h);
             }
         }
-        
         void setSize( int w, int h ){
             synchronized (this) {
                 if (bitmap!=null){
@@ -238,6 +243,13 @@ public abstract class Scene {
                 p.x = identity.right;
                 p.y = identity.bottom;
             }
+        }
+        void zoom(float factor, float focusX, float focusY){
+            Log.d(TAG,String.format(
+                    "factor=%.3f, focus(%.0f,%.0f)",
+                    factor,
+                    focusX,
+                    focusY));
         }
         void draw(Canvas c){
             cache.update(this);

@@ -98,14 +98,10 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-
-//            scene.changeScaleFactor(detector.getScaleFactor());
-            Log.d(TAG,String.format(
-                    "mag=%.3f, focus(%.0f,%.0f)",
-                    detector.getScaleFactor(),
-                    detector.getFocusX(),
-                    detector.getFocusY()));
-
+            scene.zoomViewport(
+                detector.getScaleFactor(),
+                detector.getFocusX(),
+                detector.getFocusY());
             invalidate();
             return true;
         }
