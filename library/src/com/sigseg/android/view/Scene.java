@@ -60,7 +60,7 @@ public abstract class Scene {
     }
     //endregion
 
-    //region [gs]etViewport(Origin|Size|Translation)
+    //region [gs]etViewport(Origin|Size)
     /**
      * Get the viewport origin.
      * @return the a new Point of the origin
@@ -92,14 +92,6 @@ public abstract class Scene {
     /** Return a Point with the x value set to the viewport width, y set to height */
     public void getViewportSize(Point p){
         viewport.getSize(p);
-    }
-    /** Set the translation for the draw of the bitmap within the viewport */
-    public void setViewportTranslation(int x, int y){
-        viewport.setTranslation(x, y);
-    }
-    /** Return the Point  */
-    public void getViewportTranslation(Point p){
-        viewport.getTranslation(p);
     }
     //endregion
 
@@ -214,8 +206,6 @@ public abstract class Scene {
         final Rect identity = new Rect(0,0,0,0);
         /** A Rect that defines where the Viewport is within the scene */
         final Rect window = new Rect(0,0,0,0);
-        /** The translation to apply before drawing the bitmap */
-        Point translation = null;
 
         void setOrigin(int x, int y){
             synchronized(this){
@@ -260,28 +250,11 @@ public abstract class Scene {
                 p.y = identity.bottom;
             }
         }
-        void setTranslation(int x, int y){
-            synchronized (this) {
-                if (x==0 && y==0)
-                    translation = null;
-                else
-                    translation = new Point(x,y);
-            }
-        }
-        void getTranslation(Point p){
-            synchronized (this) {
-                p.set(translation.x,translation.y);
-            }
-        }
         void draw(Canvas c){
             cache.update(this);
             synchronized (this){
                 if (c!=null && bitmap!=null){
-                    if (translation!=null)
-                        c.translate(translation.x, translation.y);
                     c.drawBitmap( bitmap, null, identity, null );
-                    if (translation!=null)
-                        c.translate(-translation.x, -translation.y);
                     drawComplete(c);
                 }
             }
