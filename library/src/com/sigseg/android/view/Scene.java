@@ -5,6 +5,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.os.Debug;
 import android.util.Log;
 
 /*
@@ -36,7 +37,6 @@ import android.util.Log;
  */
 public abstract class Scene {
     private final String TAG = "Scene";
-    private final boolean DEBUG = false;
 
     /** The size of the Scene */
     private Point size = new Point();
@@ -122,6 +122,7 @@ public abstract class Scene {
         }
     }
     /** Invalidate the cache. This causes it to refill */
+    @SuppressWarnings("unused")
     public void invalidate(){
         cache.invalidate();
     }
@@ -182,7 +183,7 @@ public abstract class Scene {
     protected abstract void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample);
     /**
      * The Cache is done drawing the bitmap -- time to add the finishing touches 
-     * @param canvas
+     * @param canvas a canvas on which to draw
      */
     protected abstract void drawComplete(Canvas canvas);
     //endregion
@@ -262,7 +263,7 @@ public abstract class Scene {
 
     //region class Cache
 
-    private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY,SUSPEND};
+    private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY,SUSPEND}
     /**
      * Keep track of the cached bitmap
      */
@@ -274,7 +275,8 @@ public abstract class Scene {
         CacheState state = CacheState.UNINITIALIZED;
 
         void setState(CacheState newState){
-            if (DEBUG) Log.i(TAG,String.format("cacheState old=%s new=%s",state.toString(),newState.toString()));
+            if (Debug.isDebuggerConnected())
+                Log.i(TAG,String.format("cacheState old=%s new=%s",state.toString(),newState.toString()));
             state = newState;
         }
         CacheState getState(){ return state; }
@@ -283,8 +285,11 @@ public abstract class Scene {
         CacheThread cacheThread;
         
         void start(){
-            if (cacheThread!=null)
-                cacheThread.stop();
+            if (cacheThread!=null){
+                cacheThread.setRunning(false);
+                cacheThread.interrupt();
+                cacheThread = null;
+            }
             cacheThread = new CacheThread(this);
             cacheThread.setName("cacheThread");
             cacheThread.start();
@@ -338,11 +343,13 @@ public abstract class Scene {
                     // I have some data to show
                     if (bitmapRef==null){
                         // Start the cache off right
-                        if (DEBUG) Log.d(TAG,"bitmapRef is null");
+                        if (Debug.isDebuggerConnected())
+                            Log.d(TAG,"bitmapRef is null");
                         setState(CacheState.START_UPDATE);
                         cacheThread.interrupt();
                     } else if (!window.contains(viewport.window)){
-                        if (DEBUG) Log.d(TAG,"viewport not in cache");
+                        if (Debug.isDebuggerConnected())
+                            Log.d(TAG,"viewport not in cache");
                         setState(CacheState.START_UPDATE);
                         cacheThread.interrupt();
                     } else {
@@ -432,7 +439,7 @@ public abstract class Scene {
                     try {
                         // Sleep until we have something to do
                         Thread.sleep(Integer.MAX_VALUE);
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException ignored) {}
                 if (!running)
                     return;
                 long start = System.currentTimeMillis();
@@ -469,7 +476,8 @@ public abstract class Scene {
                                 }
                             }
                             long done = System.currentTimeMillis();
-                            if (DEBUG) Log.d(TAG,String.format("fillCache in %dms",done-start)); 
+                            if (Debug.isDebuggerConnected())
+                                Log.d(TAG,String.format("fillCache in %dms",done-start));
                         } catch (OutOfMemoryError e){
                                     Log.d(TAG,"CacheThread out of memory");
                             /*
