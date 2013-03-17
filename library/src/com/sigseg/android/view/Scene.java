@@ -60,29 +60,8 @@ public abstract class Scene {
     }
     //endregion
 
-    //region [gs]etViewport(Origin|Size)
-    /** Update the pass-in Point with the viewport Origin */
-    public void getViewportOrigin(Point point){
-        viewport.getOrigin(point);
-    }
-    /** Set the Viewport origin */
-    public void setViewportOrigin(int x, int y){
-        viewport.setOrigin(x, y);
-    }
-    /** Update the pass-in Point with the x value set to the viewport width, y set to height */
-    public void getViewportSize(Point point){
-        viewport.getSize(point);
-    }
-    /** Set the size of the viewport within the scene */
-    public void setViewportSize(int width, int height){
-        viewport.setSize(width, height);
-    }
-    //endregion
-
-    //region zoomViewport
-    public void zoomViewport(float factor, float focusX, float focusY){
-        viewport.zoom(factor, focusX, focusY);
-    }
+    //region getViewport()
+    public Viewport getViewport(){return viewport;}
     //endregion
 
     //region initialize/start/stop/suspend/invalidate the cache
@@ -158,7 +137,7 @@ public abstract class Scene {
      * The memory allocation you just did in fillCache caused an OutOfMemoryError.
      * You can attempt to recover. Experience shows that when we get an 
      * OutOfMemoryError, we're pretty hosed and are going down. For instance, if
-     * we're trying to decode a bitmap region with 
+     * we're trying to decode a bitmap region with
      * {@link android.graphics.BitmapRegionDecoder} and we run out of memory, 
      * we're going to die somewhere in the C code with a SIGSEGV. 
      * @param error The OutOfMemoryError exception data
@@ -174,7 +153,7 @@ public abstract class Scene {
      */
     protected abstract Rect calculateCacheWindow(Rect viewportRect);
     /**
-     * This method fills the passed-in bitmap with sample data. This function must 
+     * This method fills the passed-in bitmap with sample data. This function must
      * return as fast as possible so it shouldn't have to do any IO at all -- the
      * quality of the user experience rests on the speed of this function.
      * @param bitmap The Bitmap to fill
@@ -182,7 +161,7 @@ public abstract class Scene {
      */
     protected abstract void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample);
     /**
-     * The Cache is done drawing the bitmap -- time to add the finishing touches 
+     * The Cache is done drawing the bitmap -- time to add the finishing touches
      * @param canvas a canvas on which to draw
      */
     protected abstract void drawComplete(Canvas canvas);
@@ -190,13 +169,13 @@ public abstract class Scene {
 
     //region class Viewport
 
-    private class Viewport {
+    public class Viewport {
         /** The bitmap of the current viewport */
         Bitmap bitmap = null;
         /** A Rect that defines where the Viewport is within the scene */
         final Rect window = new Rect(0,0,0,0);
 
-        void setOrigin(int x, int y){
+        public void setOrigin(int x, int y){
             synchronized(this){
                 int w = window.width();
                 int h = window.height();
@@ -217,9 +196,9 @@ public abstract class Scene {
                 window.set(x, y, x+w, y+h);
             }
         }
-        void setSize( int w, int h ){
+        public void setSize( int w, int h ){
             synchronized (this) {
-                if (bitmap!=null){
+                if (bitmap !=null){
                     bitmap.recycle();
                     bitmap = null;
                 }
@@ -231,18 +210,18 @@ public abstract class Scene {
                         window.top + h);
             }
         }
-        void getOrigin(Point p){
+        public void getOrigin(Point p){
             synchronized (this) {
                 p.set(window.left, window.top);
             }
         }
-        void getSize(Point p){
+        public void getSize(Point p){
             synchronized (this) {
                 p.x = window.width();
                 p.y = window.height();
             }
         }
-        void zoom(float factor, float focusX, float focusY){
+        public void zoom(float factor, float focusX, float focusY){
             Log.d(TAG,String.format(
                     "factor=%.3f, focus(%.0f,%.0f)",
                     factor,
@@ -252,8 +231,8 @@ public abstract class Scene {
         void draw(Canvas c){
             cache.update(this);
             synchronized (this){
-                if (c!=null && bitmap!=null){
-                    c.drawBitmap( bitmap, 0F, 0F, null);
+                if (c!=null && bitmap !=null){
+                    c.drawBitmap(bitmap, 0F, 0F, null);
                     drawComplete(c);
                 }
             }

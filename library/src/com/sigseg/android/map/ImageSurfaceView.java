@@ -25,21 +25,21 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     //region getters and setters
     public void getViewport(Point p){
-        scene.getViewportOrigin(p);
+        scene.getViewport().getOrigin(p);
     }
     
     public void setViewport(Point viewport){
-        scene.setViewportOrigin(viewport.x, viewport.y);
+        scene.getViewport().setOrigin(viewport.x, viewport.y);
     }
 
     public void setViewportCenter() {
         Point viewportSize = new Point();
         Point sceneSize = scene.getSceneSize();
-        scene.getViewportSize(viewportSize);
+        scene.getViewport().getSize(viewportSize);
 
         int x = (sceneSize.x - viewportSize.x) / 2;
         int y = (sceneSize.y - viewportSize.y) / 2;
-        scene.setViewportOrigin(x, y);
+        scene.getViewport().setOrigin(x, y);
     }
 
     public void setInputStream(InputStream inputStream) throws IOException {
@@ -98,7 +98,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-            scene.zoomViewport(
+            scene.getViewport().zoom(
                 detector.getScaleFactor(),
                 detector.getFocusX(),
                 detector.getFocusY());
@@ -112,7 +112,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region implements SurfaceHolder.Callback
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        scene.setViewportSize(width, height);
+        scene.getViewport().setSize(width, height);
         Log.d(TAG,String.format("onSizeChanged(w=%d,h=%d)",width,height));
     }
 
@@ -257,8 +257,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         Point fling_viewSize = new Point();
         Point fling_sceneSize = new Point();
         boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
-            scene.getViewportOrigin(fling_viewOrigin);
-            scene.getViewportSize(fling_viewSize);
+            scene.getViewport().getOrigin(fling_viewOrigin);
+            scene.getViewport().getSize(fling_viewSize);
             scene.getSceneSize(fling_sceneSize);
 
             synchronized(this){
@@ -293,7 +293,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 viewDown.x = (int) event.getX();
                 viewDown.y = (int) event.getY();
                 Point p = new Point();
-                scene.getViewportOrigin(p);
+                scene.getViewport().getOrigin(p);
                 viewportOriginAtDown.set(p.x,p.y);
             }
             return true;
@@ -306,7 +306,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 int newX = (int) (viewportOriginAtDown.x - deltaX);
                 int newY = (int) (viewportOriginAtDown.y - deltaY);
                 
-                scene.setViewportOrigin(newX, newY);
+                scene.getViewport().setOrigin(newX, newY);
                 invalidate();
             }
             return true;
@@ -350,7 +350,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                     }
                     if (touch.state==TouchState.IN_FLING){
                         scroller.computeScrollOffset();
-                        scene.setViewportOrigin(scroller.getCurrX(), scroller.getCurrY());
+                        scene.getViewport().setOrigin(scroller.getCurrX(), scroller.getCurrY());
                         if (scroller.isFinished()){
                             scene.setSuspend(false);
                             synchronized (touch) {
