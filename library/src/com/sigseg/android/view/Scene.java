@@ -221,9 +221,15 @@ public abstract class Scene {
         }
         public void getPhysicalSize(Point p){
             synchronized (this){
-                p.x = bitmap.getWidth();
-                p.y = bitmap.getHeight();
+                p.x = getPhysicalWidth();
+                p.y = getPhysicalHeight();
             }
+        }
+        public int getPhysicalWidth(){
+            return bitmap.getWidth();
+        }
+        public int getPhysicalHeight(){
+            return bitmap.getHeight();
         }
         public void zoom(float factor, PointF screenFocus){
             if (factor!=1.0){
@@ -233,7 +239,6 @@ public abstract class Scene {
                 float screenWidthToHeight = screenSize.x / screenSize.y;
                 float screenHeightToWidth = screenSize.y / screenSize.x;
                 synchronized (this){
-                    float oldzoom = zoom;
                     zoom *= factor;
                     RectF w1 = new RectF(window);
                     RectF w2 = new RectF();
@@ -241,7 +246,7 @@ public abstract class Scene {
                             w1.left + (screenFocus.x/screenSize.x)*w1.width(),
                             w1.top + (screenFocus.y/screenSize.y)*w1.height()
                     );
-                    float w2Width = w1.width() * factor;
+                    float w2Width = getPhysicalWidth() * zoom;
                     if (w2Width > sceneSize.x)
                         w2Width = sceneSize.x;
                     float w2Height = w2Width * screenHeightToWidth;
