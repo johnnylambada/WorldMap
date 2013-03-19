@@ -100,11 +100,14 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         private PointF screenFocus = new PointF();
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-            screenFocus.set(detector.getFocusX(),detector.getFocusY());
-            scene.getViewport().zoom(
-                    detector.getScaleFactor(),
-                    screenFocus);
-            invalidate();
+            float scaleFactor = detector.getScaleFactor();
+            if (scaleFactor!=0f && scaleFactor!=1.0f){
+                screenFocus.set(detector.getFocusX(),detector.getFocusY());
+                scene.getViewport().zoom(
+                        1/scaleFactor,
+                        screenFocus);
+                invalidate();
+            }
             return true;
         }
     }
