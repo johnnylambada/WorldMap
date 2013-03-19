@@ -3,6 +3,7 @@ package com.sigseg.android.map;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.*;
@@ -96,16 +97,18 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     //region class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        private PointF screenFocus = new PointF();
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
+            screenFocus.set(detector.getFocusX(),detector.getFocusY());
             scene.getViewport().zoom(
-                detector.getScaleFactor(),
-                detector.getFocusX(),
-                detector.getFocusY());
+                    detector.getScaleFactor(),
+                    screenFocus);
             invalidate();
             return true;
         }
     }
+
     //endregion
 
 

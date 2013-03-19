@@ -1,10 +1,7 @@
 package com.sigseg.android.view;
 
-import android.graphics.Bitmap;
+import android.graphics.*;
 import android.graphics.Bitmap.Config;
-import android.graphics.Canvas;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.os.Debug;
 import android.util.Log;
 
@@ -174,6 +171,7 @@ public abstract class Scene {
         Bitmap bitmap = null;
         /** A Rect that defines where the Viewport is within the scene */
         final Rect window = new Rect(0,0,0,0);
+        float zoom = 1.0f;
 
         public void setOrigin(int x, int y){
             synchronized(this){
@@ -221,12 +219,93 @@ public abstract class Scene {
                 p.y = window.height();
             }
         }
-        public void zoom(float factor, float focusX, float focusY){
-            Log.d(TAG,String.format(
-                    "factor=%.3f, focus(%.0f,%.0f)",
-                    factor,
-                    focusX,
-                    focusY));
+        public void getPhysicalSize(Point p){
+            synchronized (this){
+                p.x = bitmap.getWidth();
+                p.y = bitmap.getHeight();
+            }
+        }
+        public void zoom(float factor, PointF screenFocus){
+            if (factor!=1.0){
+
+                PointF screenSize = new PointF(bitmap.getWidth(),bitmap.getHeight());
+                PointF sceneSize = new PointF(getSceneSize());
+                float screenWidthToHeight = screenSize.x / screenSize.y;
+                float screenHeightToWidth = screenSize.y / screenSize.x;
+                synchronized (this){
+                    float oldzoom = zoom;
+                    zoom *= factor;
+                    RectF w1 = new RectF(window);
+                    RectF w2 = new RectF();
+                    PointF sceneFocus = new PointF(
+                            w1.left + (screenFocus.x/screenSize.x)*w1.width(),
+                            w1.top + (screenFocus.y/screenSize.y)*w1.height()
+                    );
+                    float w2Width = w1.width() * factor;
+                    if (w2Width > sceneSize.x)
+                        w2Width = sceneSize.x;
+                    float w2Height = w2Width * screenHeightToWidth;
+                    if (w2Height > sceneSize.y){
+                        w2Height = sceneSize.y;
+                        w2Width = w2Height * screenWidthToHeight;
+                    }
+                    w2.left = sceneFocus.x - ((screenFocus.x/screenSize.x) * w2Width);
+                    w2.top = sceneFocus.y - ((screenFocus.y/screenSize.y) * w2Height);
+                    if (w2.left<0)
+                        w2.left=0;
+                    if (w2.top<0)
+                        w2.top=0;
+                    w2.right = w2.left+w2Width;
+                    w2.bottom= w2.top+w2Height;
+                    if (w2.right>sceneSize.x){
+                        w2.right=sceneSize.x;
+                        w2.left=w2.right-w2Width;
+                    }
+                    if (w2.bottom>sceneSize.y){
+                        w2.bottom=sceneSize.y;
+                        w2.top=w2.bottom-w2Height;
+                    }
+                    window.set((int)w2.left,(int)w2.top,(int)w2.right,(int)w2.bottom);
+                    Log.d(TAG,String.format(
+                            "f=%.2f, z=%.2f, scrf(%.0f,%.0f), scnf(%.0f,%.0f) w1s(%.0f,%.0f) w2s(%.0f,%.0f) w1(%.0f,%.0f,%.0f,%.0f) w2(%.0f,%.0f,%.0f,%.0f)",
+                            factor,
+                            zoom,
+                            screenFocus.x,
+                            screenFocus.y,
+                            sceneFocus.x,
+                            sceneFocus.y,
+                            w1.width(),w1.height(),
+                            w2Width, w2Height,
+                            w1.left,w1.top,w1.right,w1.bottom,
+                            w2.left,w2.top,w2.right,w2.bottom
+                            ));
+//                    Log.d(TAG,String.format("l=%.0f,t=%.0f,r=%.0f,b=%.0f",
+//                            w2.left,
+//                            w2.top,
+//                            w2.right,
+//                            w2.bottom
+//                            ));
+                }
+            }
+//            synchronized (this){
+//
+//                // Calculate scene position of focus
+//                float newWidth = ((float)window.width()*factor);
+//                float newHeight = ((float)window.height()*factor);
+//                float widthDiff = (newWidth-(float)window.width());
+//                float heightDiff = (newHeight-(float)window.height());
+//                float newLeft = ((float)window.left-widthDiff);
+//                float newTop = ((float)window.top-heightDiff);
+//                float newRight = newLeft+((float)window.width())+widthDiff;
+//                float newBottom = newTop+((float)window.height())+heightDiff;
+//                window.set((int)newLeft,(int)newTop,(int)newRight,(int)newBottom);
+//                Log.d(TAG,String.format("l=%.0f,t=%.0f,r=%.0f,b=%.0f",
+//                        newLeft,
+//                        newTop,
+//                        newRight,
+//                        newBottom
+//                        ));
+//            }
         }
         void draw(Canvas c){
             cache.update(this);
@@ -351,8 +430,9 @@ public abstract class Scene {
                     int top    = viewport.window.top  - window.top;
                     int right  = left + viewport.window.width();
                     int bottom = top  + viewport.window.height();
+                    viewport.getPhysicalSize(dstSize);
                     srcRect.set( left, top, right, bottom );
-                    dstRect.set( 0, 0, srcRect.width(), srcRect.height());
+                    dstRect.set(0, 0, dstSize.x, dstSize.y);
                     Canvas c = new Canvas(viewport.bitmap);
                     c.drawBitmap(
                             bitmap,
@@ -371,6 +451,7 @@ public abstract class Scene {
         }
         final Rect srcRect = new Rect(0,0,0,0);
         final Rect dstRect = new Rect(0,0,0,0);
+        final Point dstSize = new Point();
         
         void loadSampleIntoViewport(){
             if (getState()!=CacheState.UNINITIALIZED){

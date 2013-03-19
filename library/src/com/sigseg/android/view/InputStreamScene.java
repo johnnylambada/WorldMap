@@ -3,12 +3,7 @@ package com.sigseg.android.view;
 import java.io.IOException;
 import java.io.InputStream;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Canvas;
-import android.graphics.Point;
-import android.graphics.Rect;
+import android.graphics.*;
 import android.util.Log;
 
 public class InputStreamScene extends Scene {
@@ -62,14 +57,19 @@ public class InputStreamScene extends Scene {
         return bitmap;
     }
 
+    private static Paint red = new Paint();
+    static{
+        red.setColor(Color.RED);
+        red.setStrokeWidth(5L);
+    }
     @Override
     protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {
         if (bitmap!=null){
             Canvas c = new Canvas(bitmap);
             int left   = (rectOfSample.left>> DOWN_SAMPLE_SHIFT);
             int top    = (rectOfSample.top>> DOWN_SAMPLE_SHIFT);
-            int right  = left + (c.getWidth()>> DOWN_SAMPLE_SHIFT);
-            int bottom = top + (c.getHeight()>> DOWN_SAMPLE_SHIFT);
+            int right  = left + (rectOfSample.width()>> DOWN_SAMPLE_SHIFT);
+            int bottom = top + (rectOfSample.height()>> DOWN_SAMPLE_SHIFT);
             Rect srcRect = new Rect( left, top, right, bottom );
             Rect identity= new Rect(0,0,c.getWidth(),c.getHeight());
             c.drawBitmap(
@@ -78,6 +78,7 @@ public class InputStreamScene extends Scene {
                 identity,
                 null
                 );
+            c.drawLine(0L,0L,c.getWidth(),c.getHeight(),red);
         }
     }
 
