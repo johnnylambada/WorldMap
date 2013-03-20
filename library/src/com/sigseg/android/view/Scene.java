@@ -35,6 +35,8 @@ import android.util.Log;
 public abstract class Scene {
     private final String TAG = "Scene";
 
+    private final static int MINIMUM_PIXELS_IN_VIEW = 50;
+
     /** The size of the Scene */
     private Point size = new Point();
     /** The viewport */
@@ -242,20 +244,32 @@ public abstract class Scene {
                 float screenWidthToHeight = screenSize.x / screenSize.y;
                 float screenHeightToWidth = screenSize.y / screenSize.x;
                 synchronized (this){
-                    zoom *= factor;
+                    float newZoom = zoom * factor;
                     RectF w1 = new RectF(window);
                     RectF w2 = new RectF();
                     PointF sceneFocus = new PointF(
                             w1.left + (screenFocus.x/screenSize.x)*w1.width(),
                             w1.top + (screenFocus.y/screenSize.y)*w1.height()
                     );
-                    float w2Width = getPhysicalWidth() * zoom;
-                    if (w2Width > sceneSize.x)
+                    float w2Width = getPhysicalWidth() * newZoom;
+                    if (w2Width > sceneSize.x){
                         w2Width = sceneSize.x;
+                        newZoom = w2Width / getPhysicalWidth();
+                    }
+                    if (w2Width < MINIMUM_PIXELS_IN_VIEW){
+                        w2Width = MINIMUM_PIXELS_IN_VIEW;
+                        newZoom = w2Width / getPhysicalWidth();
+                    }
                     float w2Height = w2Width * screenHeightToWidth;
                     if (w2Height > sceneSize.y){
                         w2Height = sceneSize.y;
                         w2Width = w2Height * screenWidthToHeight;
+                        newZoom = w2Width / getPhysicalWidth();
+                    }
+                    if (w2Height < MINIMUM_PIXELS_IN_VIEW){
+                        w2Height = MINIMUM_PIXELS_IN_VIEW;
+                        w2Width = w2Height * screenWidthToHeight;
+                        newZoom = w2Width / getPhysicalWidth();
                     }
                     w2.left = sceneFocus.x - ((screenFocus.x/screenSize.x) * w2Width);
                     w2.top = sceneFocus.y - ((screenFocus.y/screenSize.y) * w2Height);
@@ -274,6 +288,7 @@ public abstract class Scene {
                         w2.top=w2.bottom-w2Height;
                     }
                     window.set((int)w2.left,(int)w2.top,(int)w2.right,(int)w2.bottom);
+                    zoom = newZoom;
 //                    Log.d(TAG,String.format(
 //                            "f=%.2f, z=%.2f, scrf(%.0f,%.0f), scnf(%.0f,%.0f) w1s(%.0f,%.0f) w2s(%.0f,%.0f) w1(%.0f,%.0f,%.0f,%.0f) w2(%.0f,%.0f,%.0f,%.0f)",
 //                            factor,
@@ -287,33 +302,8 @@ public abstract class Scene {
 //                            w1.left,w1.top,w1.right,w1.bottom,
 //                            w2.left,w2.top,w2.right,w2.bottom
 //                            ));
-//                    Log.d(TAG,String.format("l=%.0f,t=%.0f,r=%.0f,b=%.0f",
-//                            w2.left,
-//                            w2.top,
-//                            w2.right,
-//                            w2.bottom
-//                            ));
                 }
             }
-//            synchronized (this){
-//
-//                // Calculate scene position of focus
-//                float newWidth = ((float)window.width()*factor);
-//                float newHeight = ((float)window.height()*factor);
-//                float widthDiff = (newWidth-(float)window.width());
-//                float heightDiff = (newHeight-(float)window.height());
-//                float newLeft = ((float)window.left-widthDiff);
-//                float newTop = ((float)window.top-heightDiff);
-//                float newRight = newLeft+((float)window.width())+widthDiff;
-//                float newBottom = newTop+((float)window.height())+heightDiff;
-//                window.set((int)newLeft,(int)newTop,(int)newRight,(int)newBottom);
-//                Log.d(TAG,String.format("l=%.0f,t=%.0f,r=%.0f,b=%.0f",
-//                        newLeft,
-//                        newTop,
-//                        newRight,
-//                        newBottom
-//                        ));
-//            }
         }
         void draw(Canvas c){
             cache.update(this);
