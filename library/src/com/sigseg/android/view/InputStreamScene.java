@@ -78,7 +78,7 @@ public class InputStreamScene extends Scene {
                 identity,
                 null
                 );
-            c.drawLine(0L,0L,c.getWidth(),c.getHeight(),red);
+//            c.drawLine(0L,0L,c.getWidth(),c.getHeight(),red);
         }
     }
 
