@@ -231,6 +231,9 @@ public abstract class Scene {
         public int getPhysicalHeight(){
             return bitmap.getHeight();
         }
+        public float getZoom(){
+            return zoom;
+        }
         public void zoom(float factor, PointF screenFocus){
             if (factor!=1.0){
 

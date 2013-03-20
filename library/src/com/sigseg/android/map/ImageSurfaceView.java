@@ -311,12 +311,13 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         
         boolean move(MotionEvent event){
             if (state==TouchState.IN_TOUCH){
-                int deltaX = (int) (event.getX()-viewDown.x);
-                int deltaY = (int) (event.getY()-viewDown.y);
-                int newX = (int) (viewportOriginAtDown.x - deltaX);
-                int newY = (int) (viewportOriginAtDown.y - deltaY);
+                float zoom = scene.getViewport().getZoom();
+                float deltaX = zoom * ((float)(event.getX()-viewDown.x));
+                float deltaY = zoom * ((float)(event.getY()-viewDown.y));
+                float newX = ((float)(viewportOriginAtDown.x - deltaX));
+                float newY = ((float)(viewportOriginAtDown.y - deltaY));
                 
-                scene.getViewport().setOrigin(newX, newY);
+                scene.getViewport().setOrigin((int)newX, (int)newY);
                 invalidate();
             }
             return true;
