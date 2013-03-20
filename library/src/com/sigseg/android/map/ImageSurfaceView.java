@@ -21,6 +21,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private final Touch touch;
     private GestureDetector gestureDectector;
     private ScaleGestureDetector scaleGestureDetector;
+    private long lastScaleTime = 0;
+    private long SCALE_MOVE_GUARD = 500; // milliseconds after scale to ignore move events
 
     private DrawThread drawThread;
 
@@ -59,7 +61,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         switch (me.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN: return touch.down(me);
             case MotionEvent.ACTION_MOVE:
-                if (scaleGestureDetector.isInProgress())
+                if (scaleGestureDetector.isInProgress() || System.currentTimeMillis()-lastScaleTime<SCALE_MOVE_GUARD)
                     break;
                 return touch.move(me);
             case MotionEvent.ACTION_UP: return touch.up(me);
@@ -102,12 +104,14 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         public boolean onScale(ScaleGestureDetector detector) {
             float scaleFactor = detector.getScaleFactor();
             if (scaleFactor!=0f && scaleFactor!=1.0f){
+                scaleFactor = 1/scaleFactor;
                 screenFocus.set(detector.getFocusX(),detector.getFocusY());
                 scene.getViewport().zoom(
-                        1/scaleFactor,
+                        scaleFactor,
                         screenFocus);
                 invalidate();
             }
+            lastScaleTime = System.currentTimeMillis();
             return true;
         }
     }

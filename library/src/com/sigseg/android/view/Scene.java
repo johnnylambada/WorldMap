@@ -271,19 +271,19 @@ public abstract class Scene {
                         w2.top=w2.bottom-w2Height;
                     }
                     window.set((int)w2.left,(int)w2.top,(int)w2.right,(int)w2.bottom);
-                    Log.d(TAG,String.format(
-                            "f=%.2f, z=%.2f, scrf(%.0f,%.0f), scnf(%.0f,%.0f) w1s(%.0f,%.0f) w2s(%.0f,%.0f) w1(%.0f,%.0f,%.0f,%.0f) w2(%.0f,%.0f,%.0f,%.0f)",
-                            factor,
-                            zoom,
-                            screenFocus.x,
-                            screenFocus.y,
-                            sceneFocus.x,
-                            sceneFocus.y,
-                            w1.width(),w1.height(),
-                            w2Width, w2Height,
-                            w1.left,w1.top,w1.right,w1.bottom,
-                            w2.left,w2.top,w2.right,w2.bottom
-                            ));
+//                    Log.d(TAG,String.format(
+//                            "f=%.2f, z=%.2f, scrf(%.0f,%.0f), scnf(%.0f,%.0f) w1s(%.0f,%.0f) w2s(%.0f,%.0f) w1(%.0f,%.0f,%.0f,%.0f) w2(%.0f,%.0f,%.0f,%.0f)",
+//                            factor,
+//                            zoom,
+//                            screenFocus.x,
+//                            screenFocus.y,
+//                            sceneFocus.x,
+//                            sceneFocus.y,
+//                            w1.width(),w1.height(),
+//                            w2Width, w2Height,
+//                            w1.left,w1.top,w1.right,w1.bottom,
+//                            w2.left,w2.top,w2.right,w2.bottom
+//                            ));
 //                    Log.d(TAG,String.format("l=%.0f,t=%.0f,r=%.0f,b=%.0f",
 //                            w2.left,
 //                            w2.top,
