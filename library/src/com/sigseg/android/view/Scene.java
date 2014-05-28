@@ -424,6 +424,9 @@ public abstract class Scene {
         void loadBitmapIntoViewport(Bitmap bitmap){
             if (bitmap!=null){
                 synchronized(viewport){
+                     
+                    c.drawColor(Color.BLACK);
+                     
                     int left   = viewport.window.left - window.left;
                     int top    = viewport.window.top  - window.top;
                     int right  = left + viewport.window.width();
