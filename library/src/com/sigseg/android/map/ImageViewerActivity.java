@@ -76,6 +76,13 @@ public class ImageViewerActivity extends Activity {
             imageSurfaceView.setViewportCenter();
         }
     }
+    
+     @Override
+	protected void onResume() {
+		super.onResume();
+		
+		imageSurfaceView.setViewport(new Point(imageSurfaceView.getWidth()/2, imageSurfaceView.getHeight()/2));
+	}
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
