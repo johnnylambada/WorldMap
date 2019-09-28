@@ -4,3 +4,5 @@ out/
 *.iml
 .idea/
 ant.properties
+v3/app/release
+
