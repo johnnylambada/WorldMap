@@ -9,18 +9,10 @@ import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.sigseg.android.io.AssetCopier;
 import com.sigseg.android.io.RandomAccessFileInputStream;
 import com.sigseg.android.worldmap.R;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.FileChannel;
 
 
 public class ImageViewerActivity extends Activity {
@@ -77,14 +69,7 @@ public class ImageViewerActivity extends Activity {
                     filename = uri.getPath();
                     is = new RandomAccessFileInputStream(uri.getPath());
                 } else {
-
-                    new AssetCopier(this).copy("", getFilesDir());
-
-                    File f = new File(getFilesDir() + java.io.File.separator + MAP_FILE);
-                    Log.d("JLSTUFF", "file length = "+f.length());
-//                    is = new RandomAccessFileInputStream(f);
-                    is = new RandomAccessFileInputStream(f);
-//                    is = getAssets().open(MAP_FILE);
+                    is = getAssets().open(MAP_FILE);
                 }
 
                 imageSurfaceView.setInputStream(is);
@@ -94,35 +79,6 @@ public class ImageViewerActivity extends Activity {
             imageSurfaceView.setViewportCenter();
         }
     }
-
-//                    is = new RandomAccessFileInputStream("file://sdcard/world.jpg");
-//                    AssetManager am = getAssets();
-//                    AssetFileDescriptor afd = null;
-//                    try {
-//                        afd = am.openFd( MAP_FILE);
-//
-//                        // Create new file to copy into.
-//                        File file = new File(getFilesDir(), MAP_FILE);
-//                        file.createNewFile();
-//
-//                        copyFdToFile(afd.getFileDescriptor(), file);
-//
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-
-//    public static void copyFdToFile(FileDescriptor src, File dst) throws IOException {
-//        FileChannel inChannel = new FileInputStream(src).getChannel();
-//        FileChannel outChannel = new FileOutputStream(dst).getChannel();
-//        try {
-//            inChannel.transferTo(0, inChannel.size(), outChannel);
-//        } finally {
-//            if (inChannel != null)
-//                inChannel.close();
-//            if (outChannel != null)
-//                outChannel.close();
-//        }
-//    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {

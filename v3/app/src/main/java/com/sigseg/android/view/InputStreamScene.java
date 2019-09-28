@@ -34,12 +34,10 @@ public class InputStreamScene extends Scene {
     public InputStreamScene(InputStream inputStream) throws IOException {
         BitmapFactory.Options tmpOptions = new BitmapFactory.Options();
 
-        inputStream.reset();
         this.decoder = BitmapRegionDecoder.newInstance(inputStream, false);
 
         // Grab the bounds for the scene dimensions
         tmpOptions.inJustDecodeBounds = true;
-//        tmpOptions.inJustDecodeBounds = false;
         inputStream.reset();
         BitmapFactory.decodeStream(inputStream, null, tmpOptions);
         inputStream.reset();
