@@ -10,6 +10,7 @@ import android.view.*;
 import android.view.GestureDetector.OnGestureListener;
 import android.widget.Scroller;
 import com.sigseg.android.view.InputStreamScene;
+import com.sigseg.android.view.Scene;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,22 +75,22 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region SurfaceHolder.Callback constructors
     public ImageSurfaceView(Context context) {
         super(context);
-        touch = new Touch(context);
+        touch = new Touch(context, ()->scene, this::invalidate);
         init(context);
     }
     
     public ImageSurfaceView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        touch = new Touch(context);
+        touch = new Touch(context, ()->scene, this::invalidate);
         init(context);
     }
 
     public ImageSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        touch = new Touch(context);
+        touch = new Touch(context, ()->scene, this::invalidate);
         init(context);
     }
-    
+
     private void init(Context context){
         gestureDectector = new GestureDetector(context,this);
         getHolder().addCallback(this);
@@ -225,157 +226,6 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     //region class Touch
 
-    enum TouchState {UNTOUCHED,IN_TOUCH,START_FLING,IN_FLING};
-    class Touch {
-        TouchState state = TouchState.UNTOUCHED;
-        /** Where on the view did we initially touch */
-        final Point viewDown = new Point(0,0);
-        /** What was the coordinates of the viewport origin? */
-        final Point viewportOriginAtDown = new Point(0,0);
-        
-        final Scroller scroller;
-        
-        TouchThread touchThread;
-        
-        Touch(Context context){
-            scroller = new Scroller(context);
-        }
-        
-        void start(){
-            touchThread = new TouchThread(this);
-            touchThread.setName("touchThread");
-            touchThread.start();
-        }
-        
-        void stop(){
-            touchThread.running = false;
-            touchThread.interrupt();
-
-            boolean retry = true;
-            while (retry) {
-                try {
-                    touchThread.join();
-                    retry = false;
-                } catch (InterruptedException e) {
-                    // we will try it again and again...
-                }
-            }
-            touchThread = null;
-        }
-        
-        Point fling_viewOrigin = new Point();
-        Point fling_viewSize = new Point();
-        Point fling_sceneSize = new Point();
-        boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
-            scene.getViewport().getOrigin(fling_viewOrigin);
-            scene.getViewport().getSize(fling_viewSize);
-            scene.getSceneSize(fling_sceneSize);
-
-            synchronized(this){
-                state = TouchState.START_FLING;
-                scene.setSuspend(true);
-                scroller.fling(
-                    fling_viewOrigin.x,
-                    fling_viewOrigin.y,
-                    (int)-velocityX,
-                    (int)-velocityY,
-                    0, 
-                    fling_sceneSize.x-fling_viewSize.x, 
-                    0,
-                    fling_sceneSize.y-fling_viewSize.y);
-                touchThread.interrupt();
-            }
-//            Log.d(TAG,String.format("scroller.fling(%d,%d,%d,%d,%d,%d,%d,%d)",
-//                    fling_viewOrigin.x,
-//                    fling_viewOrigin.y,
-//                    (int)-velocityX,
-//                    (int)-velocityY,
-//                    0, 
-//                    fling_sceneSize.x-fling_viewSize.x,
-//                    0,
-//                    fling_sceneSize.y-fling_viewSize.y));
-            return true;
-        }
-        boolean down(MotionEvent event){
-            scene.setSuspend(false);    // If we were suspended because of a fling
-            synchronized(this){
-                state = TouchState.IN_TOUCH;
-                viewDown.x = (int) event.getX();
-                viewDown.y = (int) event.getY();
-                Point p = new Point();
-                scene.getViewport().getOrigin(p);
-                viewportOriginAtDown.set(p.x,p.y);
-            }
-            return true;
-        }
-        
-        boolean move(MotionEvent event){
-            if (state==TouchState.IN_TOUCH){
-                float zoom = scene.getViewport().getZoom();
-                float deltaX = zoom * ((float)(event.getX()-viewDown.x));
-                float deltaY = zoom * ((float)(event.getY()-viewDown.y));
-                float newX = ((float)(viewportOriginAtDown.x - deltaX));
-                float newY = ((float)(viewportOriginAtDown.y - deltaY));
-                
-                scene.getViewport().setOrigin((int)newX, (int)newY);
-                invalidate();
-            }
-            return true;
-        }
-        
-        boolean up(MotionEvent event){
-            if (state==TouchState.IN_TOUCH){
-                state = TouchState.UNTOUCHED;
-            }
-            return true;
-        }
-        
-        boolean cancel(MotionEvent event){
-            if (state==TouchState.IN_TOUCH){
-                state = TouchState.UNTOUCHED;
-            }
-            return true;
-        }
-        
-        class TouchThread extends Thread {
-            final Touch touch;
-            boolean running = false;
-            void setRunning(boolean value){ running = value; }
-            
-            TouchThread(Touch touch){ this.touch = touch; }
-            @Override
-            public void run() {
-                running=true;
-                while(running){
-                    while(touch.state!=TouchState.START_FLING && touch.state!=TouchState.IN_FLING){
-                        try {
-                            Thread.sleep(Integer.MAX_VALUE);
-                        } catch (InterruptedException e) {}
-                        if (!running)
-                            return;
-                    }
-                    synchronized (touch) {
-                        if (touch.state==TouchState.START_FLING){
-                            touch.state = TouchState.IN_FLING;
-                        }
-                    }
-                    if (touch.state==TouchState.IN_FLING){
-                        scroller.computeScrollOffset();
-                        scene.getViewport().setOrigin(scroller.getCurrX(), scroller.getCurrY());
-                        if (scroller.isFinished()){
-                            scene.setSuspend(false);
-                            synchronized (touch) {
-                                touch.state = TouchState.UNTOUCHED;
-                                try{
-                                    Thread.sleep(5);
-                                } catch (InterruptedException e) {}
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     //endregion
 
 }
