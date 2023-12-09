@@ -6,11 +6,14 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.*;
+import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
-import android.widget.Scroller;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+
 import com.sigseg.android.view.InputStreamScene;
-import com.sigseg.android.view.Scene;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +22,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private final static String TAG = ImageSurfaceView.class.getSimpleName();
 
     private InputStreamScene scene;
-    private final Touch touch;
+    private final TouchController touch;
     private GestureDetector gestureDectector;
     private ScaleGestureDetector scaleGestureDetector;
     private long lastScaleTime = 0;
@@ -65,8 +68,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 if (scaleGestureDetector.isInProgress() || System.currentTimeMillis()-lastScaleTime<SCALE_MOVE_GUARD)
                     break;
                 return touch.move(me);
-            case MotionEvent.ACTION_UP: return touch.up(me);
-            case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
+            case MotionEvent.ACTION_UP: return touch.up();
+            case MotionEvent.ACTION_CANCEL: return touch.cancel();
         }
         return super.onTouchEvent(me);
     }
@@ -75,19 +78,19 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region SurfaceHolder.Callback constructors
     public ImageSurfaceView(Context context) {
         super(context);
-        touch = new Touch(context, ()->scene, this::invalidate);
+        touch = new TouchController(context, ()->scene, this::invalidate);
         init(context);
     }
     
     public ImageSurfaceView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        touch = new Touch(context, ()->scene, this::invalidate);
+        touch = new TouchController(context, ()->scene, this::invalidate);
         init(context);
     }
 
     public ImageSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        touch = new Touch(context, ()->scene, this::invalidate);
+        touch = new TouchController(context, ()->scene, this::invalidate);
         init(context);
     }
 
@@ -157,7 +160,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region implements OnGestureListener
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        return touch.fling( e1, e2, velocityX, velocityY);
+        return touch.fling(velocityX, velocityY);
     }
     //region the rest are defaults
     @Override
