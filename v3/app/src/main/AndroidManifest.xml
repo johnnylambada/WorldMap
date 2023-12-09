@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.sigseg.android.worldmap">
 
@@ -19,6 +20,7 @@
         >
         <activity
             android:name="com.sigseg.android.map.ImageViewerActivity"
+            android:exported="true"
             android:label="@string/app_name"
             android:screenOrientation="landscape"
             >
